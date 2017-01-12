@@ -7,4 +7,4 @@
 ####-LCD: NHD-C12832A1Z-FSW-FBW-3V3
 
 ### Dependencies:
-* *STM32Cube for STM32F7
+* *STM32Cube 1.5.0 for STM32F7
