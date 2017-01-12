@@ -8,9 +8,9 @@ static void hw_Setup( void );
 int main( void ) {
 	hw_Setup();
 
-	lcd_Test();	// just display a image from EastRising for testing
-
-	while( 1 );
+	while( 1 ) {
+		lcd_Test();	// just display a image from EastRising for testing
+	}
 	return 1;
 }
 
