@@ -13,7 +13,7 @@
 #define RST_HIGH		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_12, GPIO_PIN_SET )		// RST high
 #define RST_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_12, GPIO_PIN_RESET )		// RST low
 
-uint8_t Contrast_level=0x80;
+uint8_t Contrast_level=0x30;
 
 void Clear_ram( void );
 void Initial( void );
@@ -30,13 +30,15 @@ void DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii );
 void Gray_test( void );
 void Data_processing( uint8_t temp );
 
-static void d( volatile uint32_t t ) {
+void d( volatile uint32_t t ) {
 	while( t-- );
 }
 
 void lcd_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
+	TIM_TypeDef TIM_InitStruct;
 
+	// Setup the I/O to the module
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -48,6 +50,9 @@ void lcd_Setup( void ) {
 	GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10 |
 				GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13;
 	HAL_GPIO_Init( GPIOG, &GPIO_InitStruct );
+
+	// Setup the timer
+	//TIM_InitStruct.
 }
 
 void Write_number( const uint8_t *n, uint8_t k, uint8_t col ) {
@@ -146,11 +151,11 @@ void Set_Contrast_Control_Register( uint8_t mod ) {
 void Initial( void ) {
 	RST_HIGH;
 	RD_HIGH;
-	d( 20000 );
+	d( 50000 );
 	RST_LOW;
-	d( 20000 );
+	d( 50000 );
 	RST_HIGH;
-	d( 20000 );
+	d( 50000 );
 
 	Write_Instruction( 0xFD ); //Set Command Lock
 
@@ -289,46 +294,46 @@ void Gray_test( void ) {
 void lcd_Test( void ) {
 	Initial();
 	Write_Instruction( 0xA5 );	//--all display on
-	d( 65000 );
+	d( 50000 );
 	Write_Instruction( 0xA4 );	//--all Display off
-	d( 5000 );
+	d( 50000 );
 
 	Write_Instruction( 0xA6 );	//--set normal display
 
 	Display_Picture( pic );
-	d( 130000 );
+	d( 50000 );
 	Write_Instruction( 0xA7 );	//--set Inverse Display
 	Display_Picture( pic );
-	d( 130000 );
+	d( 50000 );
 	Write_Instruction( 0xA6);	//--set normal display
 	Display_Picture( pic1 );
-	d( 130000 );
+	d( 50000 );
 	Write_Instruction( 0xA7 );	//--set Inverse Display
 	Display_Picture( pic1 );
-	d( 130000 );
+	d( 50000 );
 
 	Write_Instruction( 0xA6 );	//--set normal display
 
 	Display_Chess( 0x00, 0x00 );	//clear display
 
 	Gray_test();	// gray test
-	d( 130000 );
+	d( 50000 );
 
 	Display_Chess( 0x55, 0xAA );
-	d( 65000 );
+	d( 50000 );
 	Display_Chess( 0xAA, 0x55 );
-	d( 65000 );
+	d( 50000 );
 
 	Display_Chess( 0x55, 0x55 );
-	d( 65000 );
+	d( 50000 );
 	Display_Chess( 0xAA,0xAA );
-	d( 65000 );
+	d( 50000 );
 
 	Display_Chess( 0xFF,0x00 );
-	d( 65000 );
+	d( 50000 );
 	Display_Chess( 0x00,0xFF );
-	d( 65000 );
+	d( 50000 );
 	Display_Chess( 0x00, 0x00 );	//clear display
 
-	d( 65000 );
+	d( 50000 );
 }

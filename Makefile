@@ -71,17 +71,19 @@ SIZE    = arm-none-eabi-size
 ##### Flags
 DEPFLAGS = -std=c99 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@"
 
-override CFLAGS += -mcpu=cortex-m7 -D"$(MCU)" -mthumb -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -g3 -Wall -Wextra -Wno-unused-parameter $(DEPFLAGS)
+override CFLAGS += -mcpu=cortex-m7 -falign-functions=16 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -fsingle-precision-constant -D"$(MCU)" -mthumb -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -g3 -Wall -Wextra -Wno-unused-parameter $(DEPFLAGS)
 
-override ASMFLAGS += -mcpu=cortex-m7 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -x assembler-with-cpp -Wall -Wextra $(DEPFLAGS)
+override ASMFLAGS += -mcpu=cortex-m7 -mthumb -falign-functions=16 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -fsingle-precision-constant -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -x assembler-with-cpp -Wall -Wextra $(DEPFLAGS)
 
-override LDFLAGS += -mcpu=cortex-m7 -mthumb -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -g3 -T./linker/STM32F746BGTx_FLASH.ld -Xlinker --gc-sections -Wl,-Map=$(LST_DIR)/$(PROJECTNAME).map -specs=nosys.specs -specs=nano.specs
+override LDFLAGS += -mcpu=cortex-m7 -mthumb -falign-functions=16 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -fsingle-precision-constant -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -g3 -T./linker/STM32F746BGTx_FLASH.ld -Xlinker --gc-sections -Wl,-Map=$(LST_DIR)/$(PROJECTNAME).map -specs=nosys.specs -specs=nano.specs
 
 ##### Include Paths
 INCLUDEPATHS += \
 -I../STM32Cube_FW_F7_V1.5.0/Drivers/CMSIS/Device/ST/STM32F7xx/Include \
 -I../STM32Cube_FW_F7_V1.5.0/Drivers/CMSIS/Include \
 -I../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Inc \
+-I../FreeRTOSv9.0.0/FreeRTOS/Source/include \
+-I../FreeRTOSv9.0.0/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1 \
 -I./src \
 -I./src/peripherals \
 -I./src/stm32
@@ -94,9 +96,16 @@ C_SRC +=  \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/list.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/queue.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/tasks.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/timers.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.c \
+../FreeRTOSv9.0.0/FreeRTOS/Source/portable/MemMang/heap_1.c \
 ./src/stm32/system_stm32f7xx.c \
 ./src/stm32/stm32f7xx_it.c \
 ./src/peripherals/lcd.c \
+./src/tasks/display.c \
 ./src/main.c
 
 S_SRC += \
