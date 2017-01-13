@@ -96,6 +96,8 @@ C_SRC +=  \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c \
 ../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c \
+../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc.c \
+../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/list.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/queue.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/tasks.c \
