@@ -14,6 +14,8 @@
 #define RST_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_12, GPIO_PIN_RESET )		// RST low
 
 uint8_t Contrast_level=0x30;
+volatile uint32_t timerCounter;
+TIM_HandleTypeDef TIM_HandleStruct;
 
 void Clear_ram( void );
 void Initial( void );
@@ -30,13 +32,18 @@ void DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii );
 void Gray_test( void );
 void Data_processing( uint8_t temp );
 
-void d( volatile uint32_t t ) {
-	while( t-- );
+static void delay_ms( volatile uint32_t t ) {
+	timerCounter = 0;
+	while( timerCounter < t );
+}
+
+void TIM7_IRQHandler( void ) {
+	__HAL_TIM_CLEAR_IT( &TIM_HandleStruct, TIM_IT_UPDATE );
+	timerCounter++;
 }
 
 void lcd_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
-	TIM_TypeDef TIM_InitStruct;
 
 	// Setup the I/O to the module
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -52,7 +59,18 @@ void lcd_Setup( void ) {
 	HAL_GPIO_Init( GPIOG, &GPIO_InitStruct );
 
 	// Setup the timer
-	//TIM_InitStruct.
+	__HAL_RCC_TIM7_CLK_ENABLE();
+	HAL_NVIC_SetPriority( TIM7_IRQn, 0, 0 );
+	HAL_NVIC_EnableIRQ( TIM7_IRQn );
+
+	TIM_HandleStruct.Instance = TIM7;
+	TIM_HandleStruct.Init.ClockDivision = 0;
+	TIM_HandleStruct.Init.Prescaler = 216;		// 108MHz of input clock
+	TIM_HandleStruct.Init.Period = 1000;		// Interrupt each 1ms
+	TIM_HandleStruct.Init.CounterMode = TIM_COUNTERMODE_UP;
+	if( HAL_TIM_Base_Init( &TIM_HandleStruct ) != HAL_OK )
+		while( 1 );
+	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );
 }
 
 void Write_number( const uint8_t *n, uint8_t k, uint8_t col ) {
@@ -151,11 +169,11 @@ void Set_Contrast_Control_Register( uint8_t mod ) {
 void Initial( void ) {
 	RST_HIGH;
 	RD_HIGH;
-	d( 50000 );
+	delay_ms( 200 );
 	RST_LOW;
-	d( 50000 );
+	delay_ms( 200 );
 	RST_HIGH;
-	d( 50000 );
+	delay_ms( 200 );
 
 	Write_Instruction( 0xFD ); //Set Command Lock
 
@@ -294,46 +312,45 @@ void Gray_test( void ) {
 void lcd_Test( void ) {
 	Initial();
 	Write_Instruction( 0xA5 );	//--all display on
-	d( 50000 );
+	delay_ms( 500 );
 	Write_Instruction( 0xA4 );	//--all Display off
-	d( 50000 );
+	delay_ms( 500 );
 
 	Write_Instruction( 0xA6 );	//--set normal display
 
 	Display_Picture( pic );
-	d( 50000 );
+	delay_ms( 3000 );
 	Write_Instruction( 0xA7 );	//--set Inverse Display
 	Display_Picture( pic );
-	d( 50000 );
+	delay_ms( 500 );
 	Write_Instruction( 0xA6);	//--set normal display
 	Display_Picture( pic1 );
-	d( 50000 );
+	delay_ms( 500 );
 	Write_Instruction( 0xA7 );	//--set Inverse Display
 	Display_Picture( pic1 );
-	d( 50000 );
+	delay_ms( 500 );
 
 	Write_Instruction( 0xA6 );	//--set normal display
 
 	Display_Chess( 0x00, 0x00 );	//clear display
 
 	Gray_test();	// gray test
-	d( 50000 );
+	delay_ms( 500 );
 
 	Display_Chess( 0x55, 0xAA );
-	d( 50000 );
+	delay_ms( 500 );
 	Display_Chess( 0xAA, 0x55 );
-	d( 50000 );
+	delay_ms( 500 );
 
 	Display_Chess( 0x55, 0x55 );
-	d( 50000 );
+	delay_ms( 500 );
 	Display_Chess( 0xAA,0xAA );
-	d( 50000 );
+	delay_ms( 500 );
 
 	Display_Chess( 0xFF,0x00 );
-	d( 50000 );
+	delay_ms( 500 );
 	Display_Chess( 0x00,0xFF );
-	d( 50000 );
+	delay_ms( 500 );
 	Display_Chess( 0x00, 0x00 );	//clear display
 
-	d( 50000 );
 }
