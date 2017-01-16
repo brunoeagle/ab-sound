@@ -1,6 +1,6 @@
 #include "stm32f7xx_hal.h"
 #include "lcd.h"
-#include "test_lcd.h"
+#include "lcd_lib.h"
 
 #define	RD_HIGH			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET )		// DC high
 #define	RD_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET )		// DC low
@@ -18,8 +18,6 @@ volatile uint32_t timerCounter;
 TIM_HandleTypeDef TIM_HandleStruct;
 
 void Clear_ram( void );
-void Initial( void );
-void Write_number( const uint8_t *n, uint8_t k, uint8_t station_dot );
 void display_Contrast_level( uint8_t number );
 void Write_Data( uint8_t dat );
 void Write_Instruction( uint8_t cmd );
@@ -73,23 +71,23 @@ void lcd_Setup( void ) {
 	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );
 }
 
-void Write_number( const uint8_t *n, uint8_t k, uint8_t col ) {
+void lcd_WriteNumber( uint8_t number, uint8_t line, uint8_t col ) {
 	uint8_t i;
-	for(i=0;i<16;i++) {
+	for( i = line; i < line+16; i++) {
 		Set_Row_Address(i);
 		Set_Column_Address(col);
 		Write_Instruction(0x5C);
-		Data_processing(*(n+16*k+i));
+		Data_processing(*(num+16*number+i));
 	}
 }
 
-void display_Contrast_level(uint8_t number) {
+/*void display_Contrast_level(uint8_t number) {
 	uint8_t number1,number2,number3;
 	number1=number/100;number2=number%100/10;number3=number%100%10;
     Write_number(num,number1,0);
 	Write_number(num,number2,2);
 	Write_number(num,number3,4);
-}
+}*/
 
 void Write_Data(uint8_t dat) {
 	DC_HIGH;
@@ -166,7 +164,7 @@ void Set_Contrast_Control_Register( uint8_t mod ) {
 	return;
 }
 
-void Initial( void ) {
+void lcd_Init( void ) {
 	RST_HIGH;
 	RD_HIGH;
 	delay_ms( 200 );
@@ -310,15 +308,21 @@ void Gray_test( void ) {
 }
 
 void lcd_Test( void ) {
-	Initial();
-	Write_Instruction( 0xA5 );	//--all display on
+	//static uint8_t number = 0;
+	/*if( number == 0 ) {
+		lcd_Init();
+		Write_Instruction( 0xA6 );	//--set normal display
+	}*/
+	/*Write_Instruction( 0xA5 );	//--all display on
 	delay_ms( 500 );
 	Write_Instruction( 0xA4 );	//--all Display off
-	delay_ms( 500 );
+	delay_ms( 500 );*/
 
-	Write_Instruction( 0xA6 );	//--set normal display
+	//Display_Chess( 0x01, 0x00 );
+	//Write_number( num, number++, 0, 0 );
+	//if( number > 9 ) number = 0;
 
-	Display_Picture( pic );
+	/*Display_Picture( pic );
 	delay_ms( 3000 );
 	Write_Instruction( 0xA7 );	//--set Inverse Display
 	Display_Picture( pic );
@@ -351,6 +355,6 @@ void lcd_Test( void ) {
 	delay_ms( 500 );
 	Display_Chess( 0x00,0xFF );
 	delay_ms( 500 );
-	Display_Chess( 0x00, 0x00 );	//clear display
+	Display_Chess( 0x00, 0x00 );	//clear display*/
 
 }
