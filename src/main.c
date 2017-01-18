@@ -7,6 +7,7 @@
 
 #include "peripherals/lcd.h"
 #include "tasks/display.h"
+#include "tasks/volume_control.h"
 
 static void hw_Setup( void );
 
@@ -15,6 +16,7 @@ int main( void ) {
 	hw_Setup();
 
 	xTaskCreate( display_Task, "Display Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
+	xTaskCreate( volumeControl_Task, "Volume Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	vTaskStartScheduler();
 
 	while( 1 );
@@ -29,8 +31,6 @@ static void hw_Setup( void ) {
 	SCB_EnableDCache();
 	HAL_NVIC_SetPriorityGrouping( NVIC_PRIORITYGROUP_4 );
 	__HAL_RCC_PWR_CLK_ENABLE();
-	__HAL_RCC_GPIOG_CLK_ENABLE();
-	__HAL_RCC_GPIOK_CLK_ENABLE();
 	HAL_Init();
 
 	/* Enable HSE Oscillator and activate PLL with HSE as source */
@@ -63,6 +63,7 @@ static void hw_Setup( void ) {
 	SystemCoreClockUpdate();
 	HAL_DeInit();
 	lcd_Setup();
+	volumeControl_Setup();
 }
 
 void vAssertCalled( uint32_t ulLine, const char *pcFile )

@@ -43,6 +43,9 @@ void TIM7_IRQHandler( void ) {
 void lcd_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
+	__HAL_RCC_GPIOG_CLK_ENABLE();
+	__HAL_RCC_GPIOK_CLK_ENABLE();
+
 	// Setup the I/O to the module
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;

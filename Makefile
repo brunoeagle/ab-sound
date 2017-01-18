@@ -109,6 +109,7 @@ C_SRC +=  \
 ./src/stm32/stm32f7xx_it.c \
 ./src/peripherals/lcd.c \
 ./src/tasks/display.c \
+./src/tasks/volume_control.c \
 ./src/main.c
 
 S_SRC += \

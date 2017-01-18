@@ -6,5 +6,6 @@
 #include "task.h"
 
 void volumeControl_Task( void *pvParameters );
+void volumeControl_Setup( void );
 
 #endif
