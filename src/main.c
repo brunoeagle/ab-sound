@@ -6,8 +6,10 @@
 #include "FreeRTOSConfig.h"
 
 #include "peripherals/lcd.h"
+#include "peripherals/digital_trimpots.h"
 #include "tasks/display.h"
 #include "tasks/volume_control.h"
+#include "stm32/spi1.h"
 
 static void hw_Setup( void );
 
@@ -62,8 +64,11 @@ static void hw_Setup( void ) {
 
 	SystemCoreClockUpdate();
 	HAL_DeInit();
+	digitalTrimpots_Setup();
 	lcd_Setup();
 	volumeControl_Setup();
+
+	spi1_Setup();
 }
 
 void vAssertCalled( uint32_t ulLine, const char *pcFile )

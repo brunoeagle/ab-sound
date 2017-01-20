@@ -80,7 +80,7 @@ void lcd_WriteNumber( uint8_t number, uint8_t line, uint8_t col ) {
 		Set_Row_Address(i);
 		Set_Column_Address(col);
 		Write_Instruction(0x5C);
-		Data_processing(*(num+16*number+i));
+		Data_processing(*(numHexa+16*number+i));
 	}
 }
 
@@ -175,8 +175,6 @@ void lcd_Init( void ) {
 	delay_ms( 200 );
 	RST_HIGH;
 	delay_ms( 200 );
-
-	Write_Instruction( 0xFD ); //Set Command Lock
 
 	Write_Instruction( 0xFD );		/*SET COMMAND LOCK*/
 	Write_Data( 0x12 );				/*UNLOCK*/
