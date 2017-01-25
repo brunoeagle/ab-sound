@@ -23,18 +23,27 @@ void digitalTrimpots_Setup( void ) {
 	HAL_GPIO_WritePin( GPIOA, GPIO_PIN_1, GPIO_PIN_RESET );
 }
 
-void digitalTrimpots_Command( uint8_t channel, uint8_t command ) {
+uint8_t digitalTrimpots_Command( uint8_t channel, uint8_t command ) {
+	uint8_t ok;
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
-	spi1_WriteByte( command );
+	ok = spi1_WriteByte( command );
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );
+	if( ( spi1_ReturnReceivedByte() & 0x02 ) && ok )
+		return 1;
+	return 0;
 }
 
-uint8_t digitalTrimpots_ReadWiper( uint8_t channel ) {
+uint8_t digitalTrimpots_ReadWiper( uint8_t channel, uint8_t *valueRead ) {
+	uint8_t ok1, ok2, cmderr;
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
-	spi1_WriteByte( 0x0C );
-	spi1_WriteByte( 0xFF );
+	ok1 = spi1_WriteByte( 0x0C );
+	cmderr = spi1_ReturnReceivedByte();
+	ok2 = spi1_WriteByte( 0xFF );
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );
-	return spi1_ReturnReceivedByte();
+	*valueRead = spi1_ReturnReceivedByte();
+	if( ok1 && ok2 && ( cmderr & 0x02 ) )
+		return 1;
+	return 0;
 }
 
 static void digitalTrimpots_SelectTrimpot( uint8_t channel, GPIO_PinState state ) {

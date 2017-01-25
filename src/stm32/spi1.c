@@ -2,7 +2,7 @@
 #include "spi1.h"
 
 SPI_HandleTypeDef SPI_HandleStruct;
-volatile uint8_t lastReceivedByte;
+uint8_t lastReceivedByte;
 
 void spi1_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -40,19 +40,8 @@ void spi1_Setup( void ) {
 }
 
 uint8_t spi1_WriteByte( uint8_t byteToWrite ) {
-	uint8_t timeout;
-	timeout = 0xFF;
-	while( !__HAL_SPI_GET_FLAG( &SPI_HandleStruct, SPI_FLAG_TXE ) && timeout )
-		timeout--;
-	if( !timeout )
+	if( HAL_SPI_TransmitReceive( &SPI_HandleStruct, &byteToWrite, &lastReceivedByte, 1, 1000 ) != HAL_OK )
 		return 0;
-	SPI1->DR = byteToWrite;
-	timeout = 0xFF;
-	while( !__HAL_SPI_GET_FLAG( &SPI_HandleStruct, SPI_FLAG_RXNE )&& timeout )
-		timeout--;
-	if( !timeout )
-		return 0;
-	lastReceivedByte = SPI1->DR;
 	return 1;
 }
 

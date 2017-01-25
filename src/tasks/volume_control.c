@@ -20,9 +20,8 @@ volatile uint8_t highChannelGain;
 static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *stateMachine, uint16_t pinUp,
 		uint16_t pinDown, volatile TickType_t *lastActivity,
 		volatile uint8_t *counter );
-static void volumeControl_SetVolume( uint8_t channel, uint8_t gain );
-static void volumeControl_IncreaseVolume( uint8_t channel );
-static void volumeControl_DecreaseVolume( uint8_t channel );
+static void volumeControl_VolumeSet( uint8_t channel, uint8_t gain );
+static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command );
 static void volumeControl_WriteHexa( uint8_t value, uint8_t line, uint8_t col );
 
 void volumeControl_Setup( void ) {
@@ -81,7 +80,7 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 				(*counter)++;
 			if( *counter >= 20 ) {
 				// increase volume on channel
-				volumeControl_IncreaseVolume( channel );
+				volumeControl_VolumeCommand( channel, INCREMENT_COMMAND );
 				*stateMachine = 3;
 				*counter = 0;
 			}
@@ -93,7 +92,7 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 				(*counter)++;
 			if( *counter >= 20 ) {
 				// decrease volume on channel
-				volumeControl_DecreaseVolume( channel );
+				volumeControl_VolumeCommand( channel, DECREMENT_COMMAND );
 				*stateMachine = 3;
 				*counter = 0;
 			}
@@ -112,87 +111,48 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 		}
 }
 
-static void volumeControl_SetVolume( uint8_t channel, uint8_t gain ) {
+static void volumeControl_VolumeSet( uint8_t channel, uint8_t gain ) {
 
 }
 
-static void volumeControl_IncreaseVolume( uint8_t channel ) {
-	uint8_t volumeSet, res;
-	switch( channel ) {
-		case LOW_ENCODER:
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_RESET );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0x06 );
-			res = spi1_ReturnReceivedByte();
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_SET );
-			vTaskDelay( 5 / portTICK_PERIOD_MS );
-
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_RESET );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0x0E );
-			res = spi1_ReturnReceivedByte();
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0xFF );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_SET );
-			volumeSet = spi1_ReturnReceivedByte();
-			volumeControl_WriteHexa( volumeSet, 0, 0 );
-			volumeControl_WriteHexa( res, 0, 6 );
-			break;
-		case HIGH_ENCODER:
-			// increase volume in both right and left trimpot
-			highChannelGain++;
-			volumeControl_WriteHexa( highChannelGain, 0, 6 );
-			break;
-		case MASTER_ENCODER:
-			// increase volume in right, left and low trimpot
-			lowChannelGain++;
-			volumeControl_WriteHexa( lowChannelGain, 0, 0 );
-			highChannelGain++;
-			volumeControl_WriteHexa( highChannelGain, 0, 6 );
-			break;
-		default:
-			break;
-	}
-}
-
-static void volumeControl_DecreaseVolume( uint8_t channel ) {
-	uint8_t res;
+static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command ) {
 	uint8_t volumeSet;
 	switch( channel ) {
 		case LOW_ENCODER:
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_RESET );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0x08 );
-			res = spi1_ReturnReceivedByte();
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_SET );
-			vTaskDelay( 5 / portTICK_PERIOD_MS );
-
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_RESET );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0x0C );
-			res = spi1_ReturnReceivedByte();
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			spi1_WriteByte( 0xFF );
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
-			HAL_GPIO_WritePin( GPIOA, GPIO_PIN_2, GPIO_PIN_SET );
-			volumeSet = spi1_ReturnReceivedByte();
+			if( !digitalTrimpots_Command( SUBWOOFER_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
+				break;
 			volumeControl_WriteHexa( volumeSet, 0, 0 );
-			volumeControl_WriteHexa( res, 0, 6 );
 			break;
 		case HIGH_ENCODER:
-			// increase volume in both right and left trimpot
-			highChannelGain--;
-			volumeControl_WriteHexa( highChannelGain, 0, 6 );
+			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
+				break;
+			volumeControl_WriteHexa( volumeSet, 0, 6 );
+			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
+				break;
+			volumeControl_WriteHexa( volumeSet, 0, 12 );
 			break;
 		case MASTER_ENCODER:
-			// increase volume in right, left and low trimpot
-			lowChannelGain--;
-			volumeControl_WriteHexa( lowChannelGain, 0, 0 );
-			highChannelGain--;
-			volumeControl_WriteHexa( highChannelGain, 0, 6 );
+			if( !digitalTrimpots_Command( SUBWOOFER_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
+				break;
+			volumeControl_WriteHexa( volumeSet, 0, 0 );
+			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
+				break;
+			volumeControl_WriteHexa( volumeSet, 0, 6 );
+			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
+				break;
+			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
+				break;
+			volumeControl_WriteHexa( volumeSet, 0, 12 );
 			break;
 		default:
 			break;

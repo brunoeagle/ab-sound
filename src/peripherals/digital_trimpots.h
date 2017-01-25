@@ -13,7 +13,7 @@
 #define	DECREMENT_COMMAND	0X08
 
 void digitalTrimpots_Setup( void );
-void digitalTrimpots_Command( uint8_t channel, uint8_t command );
-uint8_t digitalTrimpots_ReadWiper( uint8_t channel );
+uint8_t digitalTrimpots_Command( uint8_t channel, uint8_t command );
+uint8_t digitalTrimpots_ReadWiper( uint8_t channel, uint8_t *valueRead );
 
 #endif
