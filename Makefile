@@ -111,6 +111,7 @@ C_SRC +=  \
 ./src/stm32/spi1.c \
 ./src/peripherals/lcd.c \
 ./src/peripherals/digital_trimpots.c \
+./src/peripherals/input_selector.c \
 ./src/tasks/display.c \
 ./src/tasks/volume_control.c \
 ./src/main.c

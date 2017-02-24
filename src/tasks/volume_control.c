@@ -22,7 +22,6 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 		volatile uint8_t *counter );
 static void volumeControl_VolumeSet( uint8_t channel, uint8_t gain );
 static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command );
-static void volumeControl_WriteHexa( uint8_t value, uint8_t line, uint8_t col );
 
 void volumeControl_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -46,6 +45,7 @@ void volumeControl_Task( void *pvParameters ) {
 	volatile TickType_t lastLowActivity;
 	volatile TickType_t lastHighActivity;
 	volatile TickType_t lastMasterActivity;
+	uint8_t volumeSet;
 
 	lowChannelGain = DEFAULT_GAIN_LOW;
 	highChannelGain = DEFAULT_GAIN_HIGH;
@@ -55,7 +55,13 @@ void volumeControl_Task( void *pvParameters ) {
 	volumeControl_SetIndividual( SUBWOOFER, subWooferGain );*/
 
 	vTaskDelay( 2000 / portTICK_PERIOD_MS );
-	lcd_WriteNumber( 0, 0, 0 );
+	if( digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
+		lcd_WriteHexa( volumeSet, 0, 0 );
+	if( digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
+		lcd_WriteHexa( volumeSet, 0, 6 );
+	if( digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
+		lcd_WriteHexa( volumeSet, 0, 12 );
+
 	for( ;; ) {
 		volumeControl_StateMachine( LOW_ENCODER, &lowStateMachine, GPIO_PIN_14, GPIO_PIN_15, &lastLowActivity, &lowCounter );
 		volumeControl_StateMachine( HIGH_ENCODER, &highStateMachine, GPIO_PIN_6, GPIO_PIN_7, &lastHighActivity, &highCounter );
@@ -123,43 +129,38 @@ static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command ) {
 				break;
 			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 0 );
+			lcd_WriteHexa( volumeSet, 0, 0 );
 			break;
 		case HIGH_ENCODER:
 			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
 				break;
 			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 6 );
+			lcd_WriteHexa( volumeSet, 0, 6 );
 			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
 				break;
 			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 12 );
+			lcd_WriteHexa( volumeSet, 0, 12 );
 			break;
 		case MASTER_ENCODER:
 			if( !digitalTrimpots_Command( SUBWOOFER_TRIMPOT, command ) )
 				break;
 			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 0 );
+			lcd_WriteHexa( volumeSet, 0, 0 );
 			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
 				break;
 			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 6 );
+			lcd_WriteHexa( volumeSet, 0, 6 );
 			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
 				break;
 			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
 				break;
-			volumeControl_WriteHexa( volumeSet, 0, 12 );
+			lcd_WriteHexa( volumeSet, 0, 12 );
 			break;
 		default:
 			break;
 	}
-}
-
-static void volumeControl_WriteHexa( uint8_t value, uint8_t line, uint8_t col ) {
-	lcd_WriteNumber( ( ( value >> 4 ) & 0x0F ), line, col );
-	lcd_WriteNumber( ( value & 0x0F ), line, col + 2 );
 }

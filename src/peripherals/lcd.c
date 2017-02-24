@@ -2,6 +2,9 @@
 #include "lcd.h"
 #include "lcd_lib.h"
 
+#include "FreeRTOS.h"
+#include "semphr.h"
+
 #define	RD_HIGH			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET )		// DC high
 #define	RD_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET )		// DC low
 #define	DC_HIGH			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_11, GPIO_PIN_SET )		// DC high
@@ -72,6 +75,16 @@ void lcd_Setup( void ) {
 	if( HAL_TIM_Base_Init( &TIM_HandleStruct ) != HAL_OK )
 		while( 1 );
 	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );
+	lcdMutex = xSemaphoreCreateMutex();
+	while( lcdMutex == NULL );
+}
+
+void lcd_WriteHexa( uint8_t value, uint8_t line, uint8_t col ) {
+	if( xSemaphoreTake( lcdMutex, 1000 / portTICK_PERIOD_MS ) == pdTRUE ) {
+		lcd_WriteNumber( ( ( value >> 4 ) & 0x0F ), line, col );
+		lcd_WriteNumber( ( value & 0x0F ), line, col + 2 );
+		xSemaphoreGive( lcdMutex );
+	}
 }
 
 void lcd_WriteNumber( uint8_t number, uint8_t line, uint8_t col ) {
