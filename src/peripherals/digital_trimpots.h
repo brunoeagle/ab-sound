@@ -14,6 +14,8 @@
 
 void digitalTrimpots_Setup( void );
 uint8_t digitalTrimpots_Command( uint8_t channel, uint8_t command );
+uint8_t digitalTrimpots_WriteWiper( uint8_t channel, uint8_t value );
 uint8_t digitalTrimpots_ReadWiper( uint8_t channel, uint8_t *valueRead );
-
+uint8_t digitalTrimpots_ReadTCON( uint8_t channel, uint8_t *valueRead );
+uint8_t digitalTrimpots_WriteTCON( uint8_t channel, uint8_t value );
 #endif

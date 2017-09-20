@@ -33,10 +33,47 @@ uint8_t digitalTrimpots_Command( uint8_t channel, uint8_t command ) {
 	return 0;
 }
 
+uint8_t digitalTrimpots_WriteWiper( uint8_t channel, uint8_t value ) {
+	uint8_t ok1, ok2, cmderr;
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
+	ok1 = spi1_WriteByte( 0x00 );
+	cmderr = spi1_ReturnReceivedByte();
+	ok2 = spi1_WriteByte( value );
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );
+	if( ok1 && ok2 && ( cmderr & 0x02 ) )
+		return 1;
+	return 0;
+}
+
 uint8_t digitalTrimpots_ReadWiper( uint8_t channel, uint8_t *valueRead ) {
 	uint8_t ok1, ok2, cmderr;
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
 	ok1 = spi1_WriteByte( 0x0C );
+	cmderr = spi1_ReturnReceivedByte();
+	ok2 = spi1_WriteByte( 0xFF );
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );
+	*valueRead = spi1_ReturnReceivedByte();
+	if( ok1 && ok2 && ( cmderr & 0x02 ) )
+		return 1;
+	return 0;
+}
+
+uint8_t digitalTrimpots_WriteTCON( uint8_t channel, uint8_t value ) {
+	uint8_t ok1, ok2, cmderr;
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
+	ok1 = spi1_WriteByte( 0x40 );
+	cmderr = spi1_ReturnReceivedByte();
+	ok2 = spi1_WriteByte( value );
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );
+	if( ok1 && ok2 && ( cmderr & 0x02 ) )
+		return 1;
+	return 0;
+}
+
+uint8_t digitalTrimpots_ReadTCON( uint8_t channel, uint8_t *valueRead ) {
+	uint8_t ok1, ok2, cmderr;
+	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_RESET );
+	ok1 = spi1_WriteByte( 0x4C );
 	cmderr = spi1_ReturnReceivedByte();
 	ok2 = spi1_WriteByte( 0xFF );
 	digitalTrimpots_SelectTrimpot( channel, GPIO_PIN_SET );

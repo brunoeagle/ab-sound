@@ -16,12 +16,14 @@
 
 volatile uint8_t lowChannelGain;
 volatile uint8_t highChannelGain;
+volatile uint8_t trimpotWiper[ 3 ];	// left, right, sub
+//volatile uint8_t trimpotLeftTCON, trimpotRightTCON, trimpotLowTCON;
 
 static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *stateMachine, uint16_t pinUp,
 		uint16_t pinDown, volatile TickType_t *lastActivity,
 		volatile uint8_t *counter );
-static void volumeControl_VolumeSet( uint8_t channel, uint8_t gain );
 static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command );
+static uint8_t volumeControl_TrimpotCommand( uint8_t trimpot, uint8_t command );
 
 void volumeControl_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -55,11 +57,14 @@ void volumeControl_Task( void *pvParameters ) {
 	volumeControl_SetIndividual( SUBWOOFER, subWooferGain );*/
 
 	vTaskDelay( 2000 / portTICK_PERIOD_MS );
-	if( digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
-		lcd_WriteHexa( volumeSet, 0, 0 );
+	digitalTrimpots_WriteWiper( LEFT_TRIMPOT, 0x05 );
 	if( digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
-		lcd_WriteHexa( volumeSet, 0, 6 );
+		lcd_WriteHexa( volumeSet, 0, 0 );
+	digitalTrimpots_WriteWiper( RIGHT_TRIMPOT, 0x05 );
 	if( digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
+		lcd_WriteHexa( volumeSet, 0, 6 );
+	digitalTrimpots_WriteWiper( SUBWOOFER_TRIMPOT, 0x05 );
+	if( digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
 		lcd_WriteHexa( volumeSet, 0, 12 );
 
 	for( ;; ) {
@@ -117,50 +122,82 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 		}
 }
 
-static void volumeControl_VolumeSet( uint8_t channel, uint8_t gain ) {
-
-}
-
 static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command ) {
 	uint8_t volumeSet;
 	switch( channel ) {
 		case LOW_ENCODER:
-			if( !digitalTrimpots_Command( SUBWOOFER_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 0 );
+			volumeControl_TrimpotCommand( SUBWOOFER_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 2 ], 0, 12 );
 			break;
 		case HIGH_ENCODER:
-			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 6 );
-			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 12 );
+			volumeControl_TrimpotCommand( LEFT_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 0 ], 0, 0 );
+			volumeControl_TrimpotCommand( RIGHT_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 1 ], 0, 6 );
 			break;
 		case MASTER_ENCODER:
-			if( !digitalTrimpots_Command( SUBWOOFER_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 0 );
-			if( !digitalTrimpots_Command( LEFT_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 6 );
-			if( !digitalTrimpots_Command( RIGHT_TRIMPOT, command ) )
-				break;
-			if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
-				break;
-			lcd_WriteHexa( volumeSet, 0, 12 );
+			volumeControl_TrimpotCommand( LEFT_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 0 ], 0, 0 );
+			volumeControl_TrimpotCommand( RIGHT_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 1 ], 0, 6 );
+			volumeControl_TrimpotCommand( SUBWOOFER_TRIMPOT, command );
+			lcd_WriteHexa( trimpotWiper[ 2 ], 0, 12 );
 			break;
 		default:
 			break;
 	}
+}
+
+static uint8_t volumeControl_TrimpotCommand( uint8_t trimpot, uint8_t command ) {
+	volatile uint8_t volumeSet, wiper, tcon;
+	if( !digitalTrimpots_ReadWiper( trimpot, &wiper ) )
+		return 0;
+	if( command == INCREMENT_COMMAND ) {
+		if( wiper >= 0x00 && wiper < 0x05 ) {
+			// activate TCON and increment by 1
+			if( !digitalTrimpots_ReadTCON( trimpot, &tcon ) )
+				return 0;
+			if( ( tcon & 0x04 ) )	// increase wiper only if TCON is already activated
+				wiper++;
+			if( !digitalTrimpots_WriteTCON( trimpot, tcon | 0x04 ) )
+				return 0;
+		}
+		else if( wiper >= 0x05 && wiper < 0xF0 ) {
+			// increment by 5
+			wiper += 5;
+		}
+		else {
+			// increment by 1
+			if( wiper < 0xFF )
+				wiper++;
+		}
+	}
+	else {
+		if( wiper <= 0xFF && wiper > 0xF0 ) {
+			// decrement by 1
+			wiper--;
+		}
+		else if( wiper <= 0xF0 && wiper >= 0x0A ) {
+			// decrement by 5
+			wiper -= 5;
+		}
+		else {
+			// decrement by 1, in case of zero, deactivate TCON
+			if( wiper > 0x00 )
+				wiper--;
+			else {
+				if( !digitalTrimpots_ReadTCON( trimpot, &tcon ) )
+					return 0;
+				if( !digitalTrimpots_WriteTCON( trimpot, tcon & 0xFB ) )
+					return 0;
+			}
+		}
+	}
+	if( !digitalTrimpots_WriteWiper( trimpot, wiper ) )
+		return 0;
+	if( !digitalTrimpots_ReadWiper( trimpot, &volumeSet ) )
+		return 0;
+	trimpotWiper[ trimpot ] = volumeSet;
+	//lcd_WriteHexa( volumeSet, 0, 6 );
+	return 1;
 }
