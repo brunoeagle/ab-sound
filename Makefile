@@ -79,9 +79,9 @@ override LDFLAGS += -mcpu=cortex-m7 -mthumb -falign-functions=16 -mfloat-abi=har
 
 ##### Include Paths
 INCLUDEPATHS += \
--I../STM32Cube_FW_F7_V1.5.0/Drivers/CMSIS/Device/ST/STM32F7xx/Include \
--I../STM32Cube_FW_F7_V1.5.0/Drivers/CMSIS/Include \
--I../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Inc \
+-I../STM32Cube_FW_F7_V1.9.0/Drivers/CMSIS/Device/ST/STM32F7xx/Include \
+-I../STM32Cube_FW_F7_V1.9.0/Drivers/CMSIS/Include \
+-I../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Inc \
 -I../FreeRTOSv9.0.0/FreeRTOS/Source/include \
 -I../FreeRTOSv9.0.0/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1 \
 -I./src \
@@ -93,13 +93,15 @@ INCLUDEPATHS += \
 ####################################################################
 
 C_SRC +=  \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim.c \
-../STM32Cube_FW_F7_V1.5.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spi.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spi.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spdifrx.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc_ex.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/list.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/queue.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/tasks.c \
@@ -114,6 +116,7 @@ C_SRC +=  \
 ./src/peripherals/input_selector.c \
 ./src/tasks/display.c \
 ./src/tasks/volume_control.c \
+./src/tasks/spdif.c \
 ./src/main.c
 
 S_SRC += \

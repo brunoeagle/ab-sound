@@ -10,6 +10,7 @@
 #include "tasks/display.h"
 #include "tasks/volume_control.h"
 #include "tasks/input_selector.h"
+#include "tasks/spdif.h"
 #include "stm32/spi1.h"
 
 static void hw_Setup( void );
@@ -70,6 +71,7 @@ static void hw_Setup( void ) {
 	lcd_Setup();
 	volumeControl_Setup();
 	inputSelector_Setup();
+	spdif_Setup();
 
 	spi1_Setup();
 }
