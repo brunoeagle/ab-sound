@@ -1,11 +1,6 @@
 #include "stm32f7xx_hal.h"
 #include "spdif.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
-#include "task.h"
-
 RCC_PeriphCLKInitTypeDef RCC_InitStruct;
 GPIO_InitTypeDef GPIO_InitStruct;
 SAI_InitTypeDef SAI_InitStruct;
@@ -13,11 +8,7 @@ DMA_InitTypeDef DMA_InitStruct;
 SPDIFRX_InitTypeDef SPDIFRX_InitStruct;
 SPDIFRX_HandleTypeDef SPDIFRX_HandleStruct;
 
-uint32_t received_data_flow[ 64 ] ;
-
-void spdif_Setup( void ) {
-	// init the codec here
-
+void spdif_Setup( uint8_t input ) {
 	__HAL_RCC_SPDIFRX_CLK_ENABLE();
 
 	RCC_InitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPDIFRX;
@@ -27,15 +18,25 @@ void spdif_Setup( void ) {
 	HAL_RCCEx_PeriphCLKConfig( &RCC_InitStruct );
 
 	/* Enable and set SPDIF Interrupt */
-	HAL_NVIC_SetPriority(SPDIF_RX_IRQn,  0, 1);
-	HAL_NVIC_EnableIRQ(SPDIF_RX_IRQn);
+	HAL_NVIC_SetPriority( SPDIF_RX_IRQn,  0, 1);
+	HAL_NVIC_EnableIRQ( SPDIF_RX_IRQn );
 
 	/*configure SPDIFRX_IN2 PC4 pin */
 
 	/* Enable SPDIF GPIO IN */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 
-	GPIO_InitStruct.Pin       = GPIO_PIN_4;
+	if( input == 1 ) {
+		GPIO_InitStruct.Pin = GPIO_PIN_4;
+		SPDIFRX_HandleStruct.Init.InputSelection = SPDIFRX_INPUT_IN2;
+	}
+	else if( input == 2 ) {
+		GPIO_InitStruct.Pin = GPIO_PIN_5;
+		SPDIFRX_HandleStruct.Init.InputSelection = SPDIFRX_INPUT_IN3;
+	}
+	else
+		return;
+
 	GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull      = GPIO_NOPULL;
 	GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -46,7 +47,6 @@ void spdif_Setup( void ) {
 	SPDIFRX_HandleStruct.Instance = SPDIFRX;
 	HAL_SPDIFRX_DeInit( &SPDIFRX_HandleStruct );
 
-	SPDIFRX_HandleStruct.Init.InputSelection = SPDIFRX_INPUT_IN2;
 	SPDIFRX_HandleStruct.Init.Retries = SPDIFRX_MAXRETRIES_15;
 	SPDIFRX_HandleStruct.Init.WaitForActivity = SPDIFRX_WAITFORACTIVITY_ON;
 	SPDIFRX_HandleStruct.Init.ChannelSelection = SPDIFRX_CHANNEL_A;
@@ -57,20 +57,8 @@ void spdif_Setup( void ) {
 	if( HAL_SPDIFRX_Init( &SPDIFRX_HandleStruct ) != HAL_OK ) {
 		while( 1 );
 	}
-
-	/* Reception in (Polling mode) */
-	while( 1 ) {
-		HAL_SPDIFRX_ReceiveDataFlow( &SPDIFRX_HandleStruct, ( uint32_t * )received_data_flow, 64, 0xFFF );
-		if( SPDIFRX_HandleStruct.ErrorCode != HAL_SPDIFRX_ERROR_NONE ) {
-			while( 1 );
-		}
-	}
 }
 
 void SPDIF_RX_IRQHandler(void) {
 	HAL_SPDIFRX_IRQHandler( &SPDIFRX_HandleStruct );
-}
-
-void spdif_Task( void *pvParameters ) {
-
 }

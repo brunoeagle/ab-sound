@@ -114,9 +114,11 @@ C_SRC +=  \
 ./src/peripherals/lcd.c \
 ./src/peripherals/digital_trimpots.c \
 ./src/peripherals/input_selector.c \
+./src/peripherals/spdif.c \
+./src/peripherals/dac.c \
 ./src/tasks/display.c \
 ./src/tasks/volume_control.c \
-./src/tasks/spdif.c \
+./src/tasks/digital_input.c \
 ./src/main.c
 
 S_SRC += \

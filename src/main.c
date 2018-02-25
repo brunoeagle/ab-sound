@@ -7,10 +7,12 @@
 
 #include "peripherals/lcd.h"
 #include "peripherals/digital_trimpots.h"
+#include "peripherals/spdif.h"
+#include "peripherals/dac.h"
 #include "tasks/display.h"
 #include "tasks/volume_control.h"
 #include "tasks/input_selector.h"
-#include "tasks/spdif.h"
+#include "tasks/digital_input.h"
 #include "stm32/spi1.h"
 
 static void hw_Setup( void );
@@ -22,6 +24,7 @@ int main( void ) {
 	xTaskCreate( display_Task, "Display Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( volumeControl_Task, "Volume Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( inputSelector_Task, "Input Selector Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
+	xTaskCreate( digitalInput_Task, "SPDIF Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	vTaskStartScheduler();
 
 	while( 1 );
@@ -71,7 +74,7 @@ static void hw_Setup( void ) {
 	lcd_Setup();
 	volumeControl_Setup();
 	inputSelector_Setup();
-	spdif_Setup();
+	dac_Setup();
 
 	spi1_Setup();
 }
