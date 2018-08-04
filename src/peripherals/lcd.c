@@ -4,6 +4,7 @@
 
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "task.h"
 
 #define	RD_HIGH			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET )		// DC high
 #define	RD_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET )		// DC low
@@ -20,28 +21,27 @@ uint8_t Contrast_level=0x30;
 volatile uint32_t timerCounter;
 TIM_HandleTypeDef TIM_HandleStruct;
 
-void Clear_ram( void );
-void display_Contrast_level( uint8_t number );
-void Write_Data( uint8_t dat );
-void Write_Instruction( uint8_t cmd );
-void Set_Row_Address( uint8_t add );
-void Set_Column_Address( uint8_t add );
-void Set_Contrast_Control_Register( uint8_t mod );
-void Display_Chess( uint8_t  value1, uint8_t value2);
-void Display_Picture(uint8_t image[]);
-void DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii );
-void Gray_test( void );
-void Data_processing( uint8_t temp );
+void lcd_ClearRam( void );
+void lcd_ShowContrastLevel( uint8_t number );
+void lcd_WriteData( uint8_t dat );
+void lcd_WriteInstruction( uint8_t cmd );
+void lcd_SetRowAddress( uint8_t add );
+void lcd_SetColumnAddress( uint8_t add );
+void lcd_SetContrast( uint8_t mod );
+void lcd_DisplayChess( uint8_t  value1, uint8_t value2);
+void lcd_DisplayPicture(uint8_t image[]);
+void lcd_DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii );
+void lcd_SendGrayScaleData( uint8_t temp );
 
-static void delay_ms( volatile uint32_t t ) {
+/*static void delay_ms( volatile uint32_t t ) {
 	timerCounter = 0;
 	while( timerCounter < t );
-}
+}*/
 
-void TIM7_IRQHandler( void ) {
+/*void TIM7_IRQHandler( void ) {
 	__HAL_TIM_CLEAR_IT( &TIM_HandleStruct, TIM_IT_UPDATE );
 	timerCounter++;
-}
+}*/
 
 void lcd_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -63,7 +63,7 @@ void lcd_Setup( void ) {
 	HAL_GPIO_Init( GPIOG, &GPIO_InitStruct );
 
 	// Setup the timer
-	__HAL_RCC_TIM7_CLK_ENABLE();
+	/*__HAL_RCC_TIM7_CLK_ENABLE();
 	HAL_NVIC_SetPriority( TIM7_IRQn, 0, 0 );
 	HAL_NVIC_EnableIRQ( TIM7_IRQn );
 
@@ -74,7 +74,7 @@ void lcd_Setup( void ) {
 	TIM_HandleStruct.Init.CounterMode = TIM_COUNTERMODE_UP;
 	if( HAL_TIM_Base_Init( &TIM_HandleStruct ) != HAL_OK )
 		while( 1 );
-	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );
+	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );*/
 	lcdMutex = xSemaphoreCreateMutex();
 	while( lcdMutex == NULL );
 }
@@ -90,22 +90,24 @@ void lcd_WriteHexa( uint8_t value, uint8_t line, uint8_t col ) {
 void lcd_WriteNumber( uint8_t number, uint8_t line, uint8_t col ) {
 	uint8_t i;
 	for( i = line; i < line+16; i++) {
-		Set_Row_Address(i);
-		Set_Column_Address(col);
-		Write_Instruction(0x5C);
-		Data_processing(*(numHexa+16*number+i));
+		lcd_SetRowAddress(i);
+		lcd_SetColumnAddress(col);
+		lcd_WriteInstruction(0x5C);
+		lcd_SendGrayScaleData(*(numHexa+16*number+i));
 	}
 }
 
-/*void display_Contrast_level(uint8_t number) {
-	uint8_t number1,number2,number3;
-	number1=number/100;number2=number%100/10;number3=number%100%10;
-    Write_number(num,number1,0);
-	Write_number(num,number2,2);
-	Write_number(num,number3,4);
-}*/
+void lcd_ShowContrastLevel(uint8_t number) {
+	uint8_t number1, number2, number3;
+	number1 = number / 100;
+	number2 = number % 100 / 10;
+	number3 = number % 100 % 10;
+    Write_number( numHexa, number1, 0);
+	Write_number( numHexa, number2, 2);
+	Write_number( numHexa, number3, 4);
+}
 
-void Write_Data(uint8_t dat) {
+void lcd_WriteData(uint8_t dat) {
 	DC_HIGH;
 	CS_LOW;
     WR_LOW;
@@ -115,7 +117,7 @@ void Write_Data(uint8_t dat) {
 	return;
 }
 
-void Write_Instruction(uint8_t cmd)
+void lcd_WriteInstruction(uint8_t cmd)
 {
 	DC_LOW;
 	CS_LOW;
@@ -126,7 +128,7 @@ void Write_Instruction(uint8_t cmd)
 	return;
 }
 
-void Data_processing( uint8_t temp ) {  //turns 1byte B/W data to 4 bye gray data
+void lcd_SendGrayScaleData( uint8_t temp ) {  //turns 1byte B/W data to 4 bye gray data
 	uint8_t temp1,temp2,temp3,temp4,temp5,temp6,temp7,temp8;
 	uint8_t h11,h12,h13,h14,h15,h16,h17,h18,d1,d2,d3,d4;
 
@@ -150,160 +152,161 @@ void Data_processing( uint8_t temp ) {  //turns 1byte B/W data to 4 bye gray dat
 	d2 = h13 | h14;
 	d3 = h15 | h16;
 	d4 = h17 | h18;
-	Write_Data( d1 );
-	Write_Data( d2 );
-	Write_Data( d3 );
-	Write_Data( d4 );
+	lcd_WriteData( d1 );
+	lcd_WriteData( d2 );
+	lcd_WriteData( d3 );
+	lcd_WriteData( d4 );
 }
 
 // Set row address 0~32
-void Set_Row_Address( uint8_t add ) {
-    Write_Instruction( 0x75 );	/*SET SECOND PRE-CHARGE PERIOD*/
+void lcd_SetRowAddress( uint8_t add ) {
+    lcd_WriteInstruction( 0x75 );	/*SET SECOND PRE-CHARGE PERIOD*/
     add = 0x3F & add;
-	Write_Data( add );
-	Write_Data( 0x3F );
+	lcd_WriteData( add );
+	lcd_WriteData( 0x3F );
 	return;
 }
 
 // Set row address 0~64  for Gray mode)
-void Set_Column_Address( uint8_t add ) {
+void lcd_SetColumnAddress( uint8_t add ) {
 	add = 0x3F & add;
-    Write_Instruction( 0x15 );	/*SET SECOND PRE-CHARGE PERIOD*/
-	Write_Data( 0x1C + add );
-	Write_Data( 0x5B );
+    lcd_WriteInstruction( 0x15 );	/*SET SECOND PRE-CHARGE PERIOD*/
+	lcd_WriteData( 0x1C + add );
+	lcd_WriteData( 0x5B );
 }
 
 // Set Contrast
-void Set_Contrast_Control_Register( uint8_t mod ) {
-    Write_Instruction( 0xC1 );
-	Write_Data( mod );
+void lcd_SetContrast( uint8_t mod ) {
+    lcd_WriteInstruction( 0xC1 );
+	lcd_WriteData( mod );
 	return;
 }
 
 void lcd_Init( void ) {
+	vTaskDelay( 50 / portTICK_PERIOD_MS );
 	RST_HIGH;
 	RD_HIGH;
-	delay_ms( 200 );
+	vTaskDelay( 50 / portTICK_PERIOD_MS );
 	RST_LOW;
-	delay_ms( 200 );
+	vTaskDelay( 1 / portTICK_PERIOD_MS );
 	RST_HIGH;
-	delay_ms( 200 );
+	vTaskDelay( 1 / portTICK_PERIOD_MS );
 
-	Write_Instruction( 0xFD );		/*SET COMMAND LOCK*/
-	Write_Data( 0x12 );				/*UNLOCK*/
-	Write_Instruction( 0xAE );		/*DISPLAY OFF*/
-	Write_Instruction( 0xB3 );		/*DISPLAYDIVIDE CLOCKRADIO/OSCILLATAR FREQUANCY*/
-	Write_Data( 0x91 );				/*MULTIPLEX RATIO*/
-	Write_Instruction( 0xCA );
-	Write_Data( 0x3F );				/*DUTY = 1/64*/
-	Write_Instruction( 0xA2 );		/*SET OFFSET*/
-	Write_Data( 0x00 );
-	Write_Instruction( 0xA1 );		/*START LINE*/
-	Write_Data( 0x00 );
-	Write_Instruction( 0xA0 );		/*SET REMAP*/
-	Write_Data( 0x14 );
-	Write_Data( 0x11 );
-	Write_Instruction( 0xAB );		/*FUNCTION REFLECION*/
-	Write_Data( 0x01 );				/* SELECTION EXTERNAL VDD */
-	Write_Instruction( 0xB4 );
-	Write_Data( 0xA0 );
-	Write_Data( 0xFD );
-	Write_Instruction( 0xC1 );		/*SET CONTRAST CURRENT*/
-	Write_Data( Contrast_level );
-	Write_Instruction( 0xC7 );		/*MASTER CONTRAST CURRENT CONTROL*/
-	Write_Data( 0x0F );
-	Write_Instruction( 0xB1 );		/*SET PHASE LENGTH*/
-	Write_Data( 0xE2 );
-	Write_Instruction( 0xD1 );
-	Write_Data( 0x82 );
-	Write_Data( 0x20 );
-	Write_Instruction( 0xBB );		/*SET PRE-CHANGE VOLTAGE*/
-	Write_Data( 0x1F );
-	Write_Instruction( 0xB6 );		/*SET SECOND PRE-CHARGE PERIOD*/
-	Write_Data( 0x08 );
-	Write_Instruction( 0xBE );		/*SET VCOMH*/
-	Write_Data( 0x07 );
-	Write_Instruction( 0xA6 );		/*NORMAL DISPLAY*/
-	Clear_ram();
-	Write_Instruction( 0xAF );		/*DISPLAY ON*/
+	lcd_WriteInstruction( 0xFD );		/*SET COMMAND LOCK*/
+	lcd_WriteData( 0x12 );				/*UNLOCK*/
+	lcd_WriteInstruction( 0xAE );		/*DISPLAY OFF*/
+	lcd_WriteInstruction( 0xB3 );		/*DISPLAYDIVIDE CLOCKRADIO/OSCILLATAR FREQUANCY*/
+	lcd_WriteData( 0x91 );				/*MULTIPLEX RATIO*/
+	lcd_WriteInstruction( 0xCA );
+	lcd_WriteData( 0x3F );				/*DUTY = 1/64*/
+	lcd_WriteInstruction( 0xA2 );		/*SET OFFSET*/
+	lcd_WriteData( 0x00 );
+	lcd_WriteInstruction( 0xA1 );		/*START LINE*/
+	lcd_WriteData( 0x00 );
+	lcd_WriteInstruction( 0xA0 );		/*SET REMAP*/
+	lcd_WriteData( 0x14 );
+	lcd_WriteData( 0x11 );
+	lcd_WriteInstruction( 0xAB );		/*FUNCTION REFLECION*/
+	lcd_WriteData( 0x01 );				/* SELECTION EXTERNAL VDD */
+	lcd_WriteInstruction( 0xB4 );
+	lcd_WriteData( 0xA0 );
+	lcd_WriteData( 0xFD );
+	lcd_WriteInstruction( 0xC1 );		/*SET CONTRAST CURRENT*/
+	lcd_WriteData( Contrast_level );
+	lcd_WriteInstruction( 0xC7 );		/*MASTER CONTRAST CURRENT CONTROL*/
+	lcd_WriteData( 0x0F );
+	lcd_WriteInstruction( 0xB1 );		/*SET PHASE LENGTH*/
+	lcd_WriteData( 0xE2 );
+	lcd_WriteInstruction( 0xD1 );
+	lcd_WriteData( 0x82 );
+	lcd_WriteData( 0x20 );
+	lcd_WriteInstruction( 0xBB );		/*SET PRE-CHANGE VOLTAGE*/
+	lcd_WriteData( 0x1F );
+	lcd_WriteInstruction( 0xB6 );		/*SET SECOND PRE-CHARGE PERIOD*/
+	lcd_WriteData( 0x08 );
+	lcd_WriteInstruction( 0xBE );		/*SET VCOMH*/
+	lcd_WriteData( 0x07 );
+	lcd_WriteInstruction( 0xA6 );		/*NORMAL DISPLAY*/
+	lcd_ClearRam();
+	lcd_WriteInstruction( 0xAF );		/*DISPLAY ON*/
 }
 
-void Clear_ram( void ){
+void lcd_ClearRam( void ){
 	uint8_t x,y;
 
-	Write_Instruction( 0x15 );
-	Write_Data( 0x00 );
-	Write_Data( 0x77 );
-	Write_Instruction( 0x75 );
-	Write_Data( 0x00 );
-	Write_Data( 0x7F );
-	Write_Instruction( 0x5C );
+	lcd_WriteInstruction( 0x15 );
+	lcd_WriteData( 0x00 );
+	lcd_WriteData( 0x77 );
+	lcd_WriteInstruction( 0x75 );
+	lcd_WriteData( 0x00 );
+	lcd_WriteData( 0x7F );
+	lcd_WriteInstruction( 0x5C );
 	for( y = 0; y < 128; y++ ) {
 		for( x = 0; x < 120; x++ ) {
-			Write_Data( 0x00 );
+			lcd_WriteData( 0x00 );
 		}
 	}
 }
 
 
 
-void Display_Chess( uint8_t value1,uint8_t value2 ) {
+void lcd_DisplayChess( uint8_t value1,uint8_t value2 ) {
     uint8_t i,k;
 
-	Set_Row_Address( 0 );
-	Set_Column_Address( 0 );
-	Write_Instruction( 0x5C );
+	lcd_SetRowAddress( 0 );
+	lcd_SetColumnAddress( 0 );
+	lcd_WriteInstruction( 0x5C );
 
     for( i = 0; i < 32; i++ ) {
     	for( k = 0; k < 32; k++ )
-    		Data_processing( value1 );
+    		lcd_SendGrayScaleData( value1 );
     	for( k = 0; k < 32; k++ )
-    		Data_processing( value2 );
+    		lcd_SendGrayScaleData( value2 );
 	}
     return;
 }
 
 //DISPLAY ASCII
-void DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii ) {
+void lcd_DrawSingleAscii( uint16_t x, uint16_t y, char *pAscii ) {
     uint8_t i;
     uint8_t str;
     uint16_t OffSet;
 
     OffSet = ( *pAscii - 32 ) * 16;
     for( i = 0; i < 16; i++ ) {
-  		Set_Row_Address( y + i );
-    	Set_Column_Address( x );
- 	    Write_Instruction( 0x5C );
+  		lcd_SetRowAddress( y + i );
+    	lcd_SetColumnAddress( x );
+ 	    lcd_WriteInstruction( 0x5C );
         str = *( AsciiLib + OffSet + i );
-        Data_processing( str );
+        lcd_SendGrayScaleData( str );
     }
 }
 
-void Display_Picture( uint8_t image[] ) {
+void lcd_DisplayPicture( uint8_t image[] ) {
 	uint8_t i,j;
 
-	Set_Row_Address( 0 );
-	Set_Column_Address( 0 );
-	Write_Instruction( 0x5C );
+	lcd_SetRowAddress( 0 );
+	lcd_SetColumnAddress( 0 );
+	lcd_WriteInstruction( 0x5C );
 	for( i = 0; i < 64; i++ ) {
 		for( j = 0; j < 32; j++ ) {
-			Data_processing( image[ i * 32 + j ] );
+			lcd_SendGrayScaleData( image[ i * 32 + j ] );
 		}
 	}
     return;
 }
 
-void Gray_test( void ) {
+void lcd_GrayTest( void ) {
 	uint8_t i,k,m,j;
 
 	j=0;
-  	Set_Row_Address( 0 );
-    Set_Column_Address( 0 );
-    Write_Instruction( 0x5C );
+  	lcd_SetRowAddress( 0 );
+    lcd_SetColumnAddress( 0 );
+    lcd_WriteInstruction( 0x5C );
     for( m = 0; m < 32; m++ ) {
 		for( k = 0; k < 16; k++ ) {
 			for( i = 0; i < 8; i++ ) {
-				Write_Data( j );
+				lcd_WriteData( j );
 			}
 			j += 0x11;
 		}
@@ -313,7 +316,7 @@ void Gray_test( void ) {
     for( m = 0; m < 32; m++ ) {
 		for( k = 0; k < 16; k++ ) {
 			for( i = 0; i < 8; i++ ) {
-				Write_Data( j );
+				lcd_WriteData( j );
 			}
 			j -= 0x11;
 		}
@@ -325,50 +328,50 @@ void lcd_Test( void ) {
 	//static uint8_t number = 0;
 	/*if( number == 0 ) {
 		lcd_Init();
-		Write_Instruction( 0xA6 );	//--set normal display
+		lcd_WriteInstruction( 0xA6 );	//--set normal display
 	}*/
-	/*Write_Instruction( 0xA5 );	//--all display on
+	/*lcd_WriteInstruction( 0xA5 );	//--all display on
 	delay_ms( 500 );
-	Write_Instruction( 0xA4 );	//--all Display off
+	lcd_WriteInstruction( 0xA4 );	//--all Display off
 	delay_ms( 500 );*/
 
-	//Display_Chess( 0x01, 0x00 );
+	//lcd_DisplayChess( 0x01, 0x00 );
 	//Write_number( num, number++, 0, 0 );
 	//if( number > 9 ) number = 0;
 
-	/*Display_Picture( pic );
+	/*lcd_DisplayPicture( pic );
 	delay_ms( 3000 );
-	Write_Instruction( 0xA7 );	//--set Inverse Display
-	Display_Picture( pic );
+	lcd_WriteInstruction( 0xA7 );	//--set Inverse Display
+	lcd_DisplayPicture( pic );
 	delay_ms( 500 );
-	Write_Instruction( 0xA6);	//--set normal display
-	Display_Picture( pic1 );
+	lcd_WriteInstruction( 0xA6);	//--set normal display
+	lcd_DisplayPicture( pic1 );
 	delay_ms( 500 );
-	Write_Instruction( 0xA7 );	//--set Inverse Display
-	Display_Picture( pic1 );
-	delay_ms( 500 );
-
-	Write_Instruction( 0xA6 );	//--set normal display
-
-	Display_Chess( 0x00, 0x00 );	//clear display
-
-	Gray_test();	// gray test
+	lcd_WriteInstruction( 0xA7 );	//--set Inverse Display
+	lcd_DisplayPicture( pic1 );
 	delay_ms( 500 );
 
-	Display_Chess( 0x55, 0xAA );
-	delay_ms( 500 );
-	Display_Chess( 0xAA, 0x55 );
+	lcd_WriteInstruction( 0xA6 );	//--set normal display
+
+	lcd_DisplayChess( 0x00, 0x00 );	//clear display
+
+	lcd_GrayTest();	// gray test
 	delay_ms( 500 );
 
-	Display_Chess( 0x55, 0x55 );
+	lcd_DisplayChess( 0x55, 0xAA );
 	delay_ms( 500 );
-	Display_Chess( 0xAA,0xAA );
+	lcd_DisplayChess( 0xAA, 0x55 );
 	delay_ms( 500 );
 
-	Display_Chess( 0xFF,0x00 );
+	lcd_DisplayChess( 0x55, 0x55 );
 	delay_ms( 500 );
-	Display_Chess( 0x00,0xFF );
+	lcd_DisplayChess( 0xAA,0xAA );
 	delay_ms( 500 );
-	Display_Chess( 0x00, 0x00 );	//clear display*/
+
+	lcd_DisplayChess( 0xFF,0x00 );
+	delay_ms( 500 );
+	lcd_DisplayChess( 0x00,0xFF );
+	delay_ms( 500 );
+	lcd_DisplayChess( 0x00, 0x00 );	//clear display*/
 
 }

@@ -13,7 +13,9 @@
 #include "tasks/volume_control.h"
 #include "tasks/input_selector.h"
 #include "tasks/digital_input.h"
+#include "tasks/wifi.h"
 #include "stm32/spi1.h"
+#include "stm32/usart2.h"
 
 static void hw_Setup( void );
 
@@ -21,10 +23,11 @@ static void hw_Setup( void );
 int main( void ) {
 	hw_Setup();
 
+	//xTaskCreate( wifi_Task, "WiFi Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( display_Task, "Display Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( volumeControl_Task, "Volume Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( inputSelector_Task, "Input Selector Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
-	xTaskCreate( digitalInput_Task, "SPDIF Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
+	//xTaskCreate( digitalInput_Task, "SPDIF Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	vTaskStartScheduler();
 
 	while( 1 );
@@ -71,12 +74,13 @@ static void hw_Setup( void ) {
 	SystemCoreClockUpdate();
 	HAL_DeInit();
 	digitalTrimpots_Setup();
-	lcd_Setup();
 	volumeControl_Setup();
 	inputSelector_Setup();
+	display_Setup();
 	dac_Setup();
 
 	spi1_Setup();
+	usart2_Setup();
 }
 
 void vAssertCalled( uint32_t ulLine, const char *pcFile )

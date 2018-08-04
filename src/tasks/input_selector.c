@@ -1,6 +1,7 @@
 #include "stm32f7xx_hal.h"
 #include "input_selector.h"
-#include "lcd.h"
+#include "display.h"
+#include "u8g2.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -21,14 +22,35 @@
 #define	SELECTOR_SPDIF	( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_10 ) == GPIO_PIN_RESET )
 #define	SELECTOR_OPTIC	( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_9 ) == GPIO_PIN_RESET )
 
+#define	DISABLE_L_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_15, GPIO_PIN_SET )
+#define	DISABLE_L_NO_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_14, GPIO_PIN_SET )
+#define	DISABLE_R_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_13, GPIO_PIN_SET )
+#define	DISABLE_R_NO_FILTER		HAL_GPIO_WritePin( GPIOI, GPIO_PIN_8, GPIO_PIN_SET )
+#define	ENABLE_L_FILTER			HAL_GPIO_WritePin( GPIOC, GPIO_PIN_15, GPIO_PIN_RESET )
+#define	ENABLE_L_NO_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_14, GPIO_PIN_RESET )
+#define	ENABLE_R_FILTER			HAL_GPIO_WritePin( GPIOC, GPIO_PIN_13, GPIO_PIN_RESET )
+#define	ENABLE_R_NO_FILTER		HAL_GPIO_WritePin( GPIOI, GPIO_PIN_8, GPIO_PIN_RESET )
+
+#define	MUTE_ON					HAL_GPIO_WritePin( GPIOE, GPIO_PIN_5, GPIO_PIN_RESET )
+#define	MUTE_OFF				HAL_GPIO_WritePin( GPIOE, GPIO_PIN_5, GPIO_PIN_SET )
+#define	STANDBY_ON				HAL_GPIO_WritePin( GPIOE, GPIO_PIN_4, GPIO_PIN_RESET )
+#define	STANDBY_OFF				HAL_GPIO_WritePin( GPIOE, GPIO_PIN_4, GPIO_PIN_SET )
+
 static void inputSelector_DisableAll( void );
+static void inputSelector_Mute( uint8_t mute );
+static void inputSelector_UpdateDisplay( uint8_t input );
+
+extern u8g2_t display;
 
 void inputSelector_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	__HAL_RCC_GPIOI_CLK_ENABLE();
 	__HAL_RCC_GPIOJ_CLK_ENABLE();
-	// buttons initialization
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOE_CLK_ENABLE();
+
+	// buttons init
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
@@ -36,55 +58,79 @@ void inputSelector_Setup( void ) {
 			GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13;
 	HAL_GPIO_Init( GPIOI, &GPIO_InitStruct );
 
-	// mux initialization
+	// input selection init
 	DISABLE_IN1;
 	DISABLE_IN2;
 	DISABLE_IN3;
 	DISABLE_IN4;
-
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
 	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 |
 			GPIO_PIN_2 | GPIO_PIN_3;
 	HAL_GPIO_Init( GPIOJ, &GPIO_InitStruct );
+
+	// filter/no filter selection
+	DISABLE_L_FILTER;
+	DISABLE_L_NO_FILTER;
+	DISABLE_R_FILTER;
+	DISABLE_R_NO_FILTER;
+	ENABLE_L_NO_FILTER;
+	ENABLE_R_NO_FILTER;
+	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 |
+			GPIO_PIN_15;
+	HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
+	GPIO_InitStruct.Pin = GPIO_PIN_8;
+	HAL_GPIO_Init( GPIOI, &GPIO_InitStruct );
+
+	// mute/stand-by init
+	MUTE_ON;
+	STANDBY_ON;
+	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_4;
+	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
+
 }
 
 void inputSelector_Task( void *pvParameters ) {
 	static uint8_t inputSelected = 0xFF;	// no input selected at first
-	vTaskDelay( 3000 / portTICK_PERIOD_MS );
-	lcd_WriteHexa( 0xFF, 0, 30 );
+	//vTaskDelay( 3000 / portTICK_PERIOD_MS );
+	inputSelector_UpdateDisplay( 0 );
 	for( ;; ) {
 		if( SELECTOR_P2 && inputSelected != 1 ) {
 			inputSelected = 1;
 			inputSelector_DisableAll();
 			ENABLE_IN1;
-			lcd_WriteHexa( 1, 0, 30 );
+			inputSelector_Mute( 0 );
+			inputSelector_UpdateDisplay( 1 );
 		}
 		if( SELECTOR_RCA && inputSelected != 2 ) {
 			inputSelected = 2;
 			inputSelector_DisableAll();
 			ENABLE_IN2;
-			lcd_WriteHexa( 2, 0, 30 );
+			inputSelector_Mute( 1 );
+			inputSelector_UpdateDisplay( 2 );
 		}
 		if( SELECTOR_BT && inputSelected != 3) {
 			inputSelected = 3;
 			inputSelector_DisableAll();
 			ENABLE_IN3;
-			lcd_WriteHexa( 3, 0, 30 );
+			inputSelector_Mute( 1 );
+			inputSelector_UpdateDisplay( 3 );
 		}
 		if( SELECTOR_SPDIF && inputSelected != 4 ) {
 			inputSelected = 4;
 			inputSelector_DisableAll();
 			ENABLE_IN4;
-			lcd_WriteHexa( 4, 0, 30 );
+			inputSelector_Mute( 0 );
+			inputSelector_UpdateDisplay( 4 );
 			// wake-up the spdif task here
 		}
 		if( SELECTOR_OPTIC && inputSelected != 5 ) {
 			inputSelected = 5;
 			inputSelector_DisableAll();
 			ENABLE_IN4;
-			lcd_WriteHexa( 5, 0, 30 );
+			inputSelector_Mute( 0 );
+			inputSelector_UpdateDisplay( 5 );
 			// wake-up the spdif task here
 		}
 	}
@@ -95,4 +141,24 @@ static void inputSelector_DisableAll( void ) {
 	DISABLE_IN2;
 	DISABLE_IN3;
 	DISABLE_IN4;
+}
+
+static void inputSelector_Mute( uint8_t mute ) {
+	if( mute ) {
+		MUTE_ON;
+		STANDBY_ON;
+	}
+	else {
+		MUTE_OFF;
+		STANDBY_OFF;
+	}
+}
+
+static void inputSelector_UpdateDisplay( uint8_t input ) {
+	char inputStr[ 2 ] = "0";
+	inputStr[ 0 ] = input | 0x30;
+	if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
+		u8g2_DrawStr( &display, 120, 15, inputStr );
+		xSemaphoreGive( displayMutex );
+	}
 }

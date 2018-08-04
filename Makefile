@@ -69,7 +69,7 @@ DUMP    = arm-none-eabi-objdump
 SIZE    = arm-none-eabi-size
 
 ##### Flags
-DEPFLAGS = -std=c99 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@"
+DEPFLAGS = -std=gnu99 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@"
 
 override CFLAGS += -mcpu=cortex-m7 -falign-functions=16 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -fsingle-precision-constant -D"$(MCU)" -mthumb -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -g3 -Wall -Wextra -Wno-unused-parameter $(DEPFLAGS)
 
@@ -84,6 +84,8 @@ INCLUDEPATHS += \
 -I../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Inc \
 -I../FreeRTOSv9.0.0/FreeRTOS/Source/include \
 -I../FreeRTOSv9.0.0/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1 \
+-I../u8g2/csrc \
+-I../u8g2/cppsrc \
 -I./src \
 -I./src/peripherals \
 -I./src/stm32
@@ -100,25 +102,48 @@ C_SRC +=  \
 ../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c \
 ../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim.c \
 ../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spi.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_uart.c \
 ../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spdifrx.c \
 ../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc_ex.c \
+../STM32Cube_FW_F7_V1.9.0/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dma.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/list.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/queue.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/tasks.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/timers.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.c \
 ../FreeRTOSv9.0.0/FreeRTOS/Source/portable/MemMang/heap_1.c \
+../u8g2/csrc/u8g2_d_setup.c \
+../u8g2/csrc/u8x8_setup.c \
+../u8g2/csrc/u8g2_d_memory.c \
+../u8g2/csrc/u8g2_setup.c \
+../u8g2/csrc/u8x8_cad.c \
+../u8g2/csrc/u8x8_d_ssd1322.c \
+../u8g2/csrc/u8g2_ll_hvline.c \
+../u8g2/csrc/u8x8_display.c \
+../u8g2/csrc/u8g2_font.c \
+../u8g2/csrc/u8g2_hvline.c \
+../u8g2/csrc/u8x8_gpio.c \
+../u8g2/csrc/u8x8_byte.c \
+../u8g2/csrc/u8g2_box.c \
+../u8g2/csrc/u8g2_intersection.c \
+../u8g2/csrc/u8g2_buffer.c \
+../u8g2/csrc/u8x8_8x8.c \
+../u8g2/csrc/u8x8_fonts.c \
+../u8g2/csrc/u8g2_fonts.c \
+../u8g2/csrc/u8g2_cleardisplay.c \
 ./src/stm32/system_stm32f7xx.c \
 ./src/stm32/stm32f7xx_it.c \
 ./src/stm32/spi1.c \
-./src/peripherals/lcd.c \
+./src/stm32/usart2.c \
 ./src/peripherals/digital_trimpots.c \
 ./src/peripherals/input_selector.c \
 ./src/peripherals/spdif.c \
 ./src/peripherals/dac.c \
+./src/peripherals/esp8266.c \
 ./src/tasks/display.c \
 ./src/tasks/volume_control.c \
 ./src/tasks/digital_input.c \
+./src/tasks/wifi.c \
 ./src/main.c
 
 S_SRC += \
