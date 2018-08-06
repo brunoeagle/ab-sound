@@ -7,5 +7,6 @@
 
 void inputSelector_Task( void *pvParameters );
 void inputSelector_Setup( void );
+uint8_t inputSelector_GetCurrentInput( void );
 
 #endif

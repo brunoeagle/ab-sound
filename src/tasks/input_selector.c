@@ -38,9 +38,8 @@
 
 static void inputSelector_DisableAll( void );
 static void inputSelector_Mute( uint8_t mute );
-static void inputSelector_UpdateDisplay( uint8_t input );
 
-extern u8g2_t display;
+volatile uint8_t inputSelected = 0;
 
 void inputSelector_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -92,37 +91,31 @@ void inputSelector_Setup( void ) {
 }
 
 void inputSelector_Task( void *pvParameters ) {
-	static uint8_t inputSelected = 0xFF;	// no input selected at first
-	//vTaskDelay( 3000 / portTICK_PERIOD_MS );
-	inputSelector_UpdateDisplay( 0 );
+	vTaskDelay( 50 / portTICK_PERIOD_MS );
 	for( ;; ) {
 		if( SELECTOR_P2 && inputSelected != 1 ) {
 			inputSelected = 1;
 			inputSelector_DisableAll();
 			ENABLE_IN1;
 			inputSelector_Mute( 0 );
-			inputSelector_UpdateDisplay( 1 );
 		}
 		if( SELECTOR_RCA && inputSelected != 2 ) {
 			inputSelected = 2;
 			inputSelector_DisableAll();
 			ENABLE_IN2;
 			inputSelector_Mute( 1 );
-			inputSelector_UpdateDisplay( 2 );
 		}
 		if( SELECTOR_BT && inputSelected != 3) {
 			inputSelected = 3;
 			inputSelector_DisableAll();
 			ENABLE_IN3;
 			inputSelector_Mute( 1 );
-			inputSelector_UpdateDisplay( 3 );
 		}
 		if( SELECTOR_SPDIF && inputSelected != 4 ) {
 			inputSelected = 4;
 			inputSelector_DisableAll();
 			ENABLE_IN4;
 			inputSelector_Mute( 0 );
-			inputSelector_UpdateDisplay( 4 );
 			// wake-up the spdif task here
 		}
 		if( SELECTOR_OPTIC && inputSelected != 5 ) {
@@ -130,7 +123,6 @@ void inputSelector_Task( void *pvParameters ) {
 			inputSelector_DisableAll();
 			ENABLE_IN4;
 			inputSelector_Mute( 0 );
-			inputSelector_UpdateDisplay( 5 );
 			// wake-up the spdif task here
 		}
 	}
@@ -154,11 +146,6 @@ static void inputSelector_Mute( uint8_t mute ) {
 	}
 }
 
-static void inputSelector_UpdateDisplay( uint8_t input ) {
-	char inputStr[ 2 ] = "0";
-	inputStr[ 0 ] = input | 0x30;
-	if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
-		u8g2_DrawStr( &display, 120, 15, inputStr );
-		xSemaphoreGive( displayMutex );
-	}
+uint8_t inputSelector_GetCurrentInput( void ) {
+	return inputSelected;
 }

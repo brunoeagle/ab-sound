@@ -12,30 +12,17 @@
 #include "task.h"
 
 // Digital trimpot goes from 0x00 to 0xFF, where 0x00 is minimum gain, and 0xFF the maximum in our circuit
-#define DEFAULT_GAIN_LOW		0x00
-#define	DEFAULT_GAIN_HIGH		0x00
-#define DEFAULT_GAIN_MASTER		0x00
+#define DEFAULT_GAIN_SUB		0x03
+#define	DEFAULT_GAIN_HIGH		0x03
+#define DEFAULT_GAIN_MASTER		0x03
 
-#define GAIN_LEFT_DISPLAY_X			0
-#define GAIN_LEFT_DISPLAY_Y			40
-#define GAIN_RIGHT_DISPLAY_X		100
-#define GAIN_RIGHT_DISPLAY_Y		40
-#define GAIN_SUBWOOFER_DISPLAY_X	200
-#define GAIN_SUBWOOFER_DISPLAY_Y	40
-
-volatile uint8_t lowChannelGain;
-volatile uint8_t highChannelGain;
 volatile uint8_t trimpotWiper[ 3 ];	// left, right, sub
-//volatile uint8_t trimpotLeftTCON, trimpotRightTCON, trimpotLowTCON;
 
 static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *stateMachine, uint16_t pinUp,
 		uint16_t pinDown, volatile TickType_t *lastActivity,
 		volatile uint8_t *counter );
 static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command );
 static uint8_t volumeControl_TrimpotCommand( uint8_t trimpot, uint8_t command );
-static void volumeControl_UpdateDisplay( uint8_t trimpot, uint8_t volume );
-
-extern u8g2_t display;
 
 void volumeControl_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -59,25 +46,17 @@ void volumeControl_Task( void *pvParameters ) {
 	volatile TickType_t lastLowActivity;
 	volatile TickType_t lastHighActivity;
 	volatile TickType_t lastMasterActivity;
-	uint8_t volumeSet;
 
-	lowChannelGain = DEFAULT_GAIN_LOW;
-	highChannelGain = DEFAULT_GAIN_HIGH;
-
-	/*volumeControl_SetIndividual( LEFT_CHANNEL, leftChannelGain );
-	volumeControl_SetIndividual( RIGHT_CHANNEL, rightChannelGain );
-	volumeControl_SetIndividual( SUBWOOFER, subWooferGain );*/
-
-	//vTaskDelay( 2000 / portTICK_PERIOD_MS );
-	digitalTrimpots_WriteWiper( LEFT_TRIMPOT, 0x05 );
-	if( digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &volumeSet ) )
-		volumeControl_UpdateDisplay( LEFT_TRIMPOT, volumeSet );
-	digitalTrimpots_WriteWiper( RIGHT_TRIMPOT, 0x05 );
-	if( digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &volumeSet ) )
-		volumeControl_UpdateDisplay( RIGHT_TRIMPOT, volumeSet );
-	digitalTrimpots_WriteWiper( SUBWOOFER_TRIMPOT, 0x05 );
-	if( digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &volumeSet ) )
-		volumeControl_UpdateDisplay( SUBWOOFER_TRIMPOT, volumeSet );
+	vTaskDelay( 50 / portTICK_PERIOD_MS );
+	digitalTrimpots_WriteWiper( LEFT_TRIMPOT, DEFAULT_GAIN_HIGH );
+	if( !digitalTrimpots_ReadWiper( LEFT_TRIMPOT, &trimpotWiper[ 0 ] ) )
+		while(1);
+	digitalTrimpots_WriteWiper( RIGHT_TRIMPOT, DEFAULT_GAIN_HIGH );
+	if( !digitalTrimpots_ReadWiper( RIGHT_TRIMPOT, &trimpotWiper[ 1 ] ) )
+		while(1);
+	digitalTrimpots_WriteWiper( SUBWOOFER_TRIMPOT, DEFAULT_GAIN_SUB );
+	if( !digitalTrimpots_ReadWiper( SUBWOOFER_TRIMPOT, &trimpotWiper[ 2 ] ) )
+		while(1);
 
 	for( ;; ) {
 		volumeControl_StateMachine( LOW_ENCODER, &lowStateMachine, GPIO_PIN_14, GPIO_PIN_15, &lastLowActivity, &lowCounter );
@@ -135,31 +114,18 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 }
 
 static void volumeControl_VolumeCommand( uint8_t channel, uint8_t command ) {
-	//uint8_t volumeSet;
 	switch( channel ) {
 		case LOW_ENCODER:
 			volumeControl_TrimpotCommand( SUBWOOFER_TRIMPOT, command );
-			volumeControl_UpdateDisplay( SUBWOOFER_TRIMPOT, trimpotWiper[ 2 ] );
-			//lcd_WriteHexa( trimpotWiper[ 2 ], 0, 12 );
 			break;
 		case HIGH_ENCODER:
 			volumeControl_TrimpotCommand( LEFT_TRIMPOT, command );
-			volumeControl_UpdateDisplay( LEFT_TRIMPOT, trimpotWiper[ 0 ] );
-			//lcd_WriteHexa( trimpotWiper[ 0 ], 0, 0 );
 			volumeControl_TrimpotCommand( RIGHT_TRIMPOT, command );
-			volumeControl_UpdateDisplay( RIGHT_TRIMPOT, trimpotWiper[ 1 ] );
-			//lcd_WriteHexa( trimpotWiper[ 1 ], 0, 6 );
 			break;
 		case MASTER_ENCODER:
 			volumeControl_TrimpotCommand( LEFT_TRIMPOT, command );
-			volumeControl_UpdateDisplay( LEFT_TRIMPOT, trimpotWiper[ 0 ] );
-			//lcd_WriteHexa( trimpotWiper[ 0 ], 0, 0 );
 			volumeControl_TrimpotCommand( RIGHT_TRIMPOT, command );
-			volumeControl_UpdateDisplay( RIGHT_TRIMPOT, trimpotWiper[ 1 ] );
-			//lcd_WriteHexa( trimpotWiper[ 1 ], 0, 6 );
 			volumeControl_TrimpotCommand( SUBWOOFER_TRIMPOT, command );
-			volumeControl_UpdateDisplay( SUBWOOFER_TRIMPOT, trimpotWiper[ 2 ] );
-			//lcd_WriteHexa( trimpotWiper[ 2 ], 0, 12 );
 			break;
 		default:
 			break;
@@ -216,30 +182,23 @@ static uint8_t volumeControl_TrimpotCommand( uint8_t trimpot, uint8_t command ) 
 	if( !digitalTrimpots_ReadWiper( trimpot, &volumeSet ) )
 		return 0;
 	trimpotWiper[ trimpot ] = volumeSet;
-	//lcd_WriteHexa( volumeSet, 0, 6 );
 	return 1;
 }
 
-static void volumeControl_UpdateDisplay( uint8_t trimpot, uint8_t volume ) {
-	uint8_t x, y;
-	char volumeStr[ 5 ];
-	itoa( volume, volumeStr, 10 );
+uint8_t volumeControl_GetCurrentVolume( uint8_t trimpot ) {
+	volatile uint8_t gain;
 	switch( trimpot ) {
 	case LEFT_TRIMPOT:
-		x = GAIN_LEFT_DISPLAY_X;
-		y = GAIN_LEFT_DISPLAY_Y;
+		gain = trimpotWiper[ 0 ];
 		break;
 	case RIGHT_TRIMPOT:
-		x = GAIN_RIGHT_DISPLAY_X;
-		y = GAIN_RIGHT_DISPLAY_Y;
+		gain = trimpotWiper[ 1 ];
 		break;
 	case SUBWOOFER_TRIMPOT:
-		x = GAIN_SUBWOOFER_DISPLAY_X;
-		y = GAIN_SUBWOOFER_DISPLAY_Y;
+		gain = trimpotWiper[ 2 ];
+		break;
+	default:
 		break;
 	}
-	if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
-		u8g2_DrawStr( &display, x, y, volumeStr );
-		xSemaphoreGive( displayMutex );
-	}
+	return gain;
 }

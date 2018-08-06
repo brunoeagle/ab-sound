@@ -1,6 +1,9 @@
 #include "stm32f7xx.h"
 #include "stdlib.h"
 #include "display.h"
+#include "digital_trimpots.h"
+#include "input_selector.h"
+#include "volume_control.h"
 #include "u8g2.h"
 
 #include "FreeRTOS.h"
@@ -24,12 +27,6 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 
 void display_Setup( void ) {
-	displayMutex = xSemaphoreCreateMutex();
-	while( displayMutex == NULL );
-}
-
-void display_Task( void *pvParameters ) {
-
 	// Setup the timer
 	/*__HAL_RCC_TIM7_CLK_ENABLE();
 	HAL_NVIC_SetPriority( TIM7_IRQn, 0, 0 );
@@ -44,23 +41,42 @@ void display_Task( void *pvParameters ) {
 		while( 1 );
 	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );*/
 
+	displayMutex = xSemaphoreCreateMutex();
+	while( displayMutex == NULL );
+}
+
+void display_Task( void *pvParameters ) {
+	uint8_t gainMaster, inputSelected;
+	char inputStr[] = { "Input: 0" };
+	char gainStr[] = { "Volume: 000" };
+
 	if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
 		u8g2_Setup_ssd1322_nhd_256x64_f( &display, U8G2_R0, cb1, cb2);
 		u8g2_InitDisplay( &display ); // send init sequence to the display, display is in sleep mode after this,
-		u8g2_SetPowerSave( &display, 0 ); // wake up display
+		u8g2_ClearBuffer( &display );
 		u8g2_ClearDisplay( &display );
-		//u8g2_DrawBox( &display, 3, 7, 25, 15 );
+		u8g2_SetFlipMode( &display, 1 );
+		u8g2_SetPowerSave( &display, 0 ); // wake up display
+		u8g2_SetFontMode( &display, 1 );
 		u8g2_SetFont( &display, u8g2_font_roentgen_nbp_tf );
-		u8g2_DrawStr( &display, 5, 15, "Input:" );
-		u8g2_SendBuffer( &display );
 		xSemaphoreGive( displayMutex );
 	}
 	for( ;; ) {
+		gainMaster = volumeControl_GetCurrentVolume( LEFT_TRIMPOT );
+		itoa( gainMaster, &gainStr[ 8 ], 10 );
+		inputSelected = inputSelector_GetCurrentInput() | 0x30;
+		inputStr[ 7 ] = inputSelected;
 		if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
+			u8g2_ClearBuffer( &display );
+			u8g2_SetDrawColor( &display, 1 );
+			u8g2_DrawStr( &display, 0, 15, inputStr );
+			u8g2_DrawBox( &display, 0, 40, gainMaster, 10 );
+			u8g2_SetDrawColor( &display, 2 );
+			u8g2_DrawStr( &display, 5, 49, gainStr );
 			u8g2_SendBuffer( &display );
 			xSemaphoreGive( displayMutex );
 		}
-		vTaskDelay( ( 50 / portTICK_PERIOD_MS ) );
+		vTaskDelay( ( 1 / portTICK_PERIOD_MS ) );
 	}
 }
 
@@ -72,18 +88,18 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 			data = (uint8_t *)arg_ptr;
 			while( arg_int > 0 ) {
 				GPIOK->ODR = *data;
-				u8x8_gpio_call( u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->data_setup_time_ns );
-				u8x8_gpio_call( u8x8, U8X8_MSG_GPIO_E, 0 );
-				u8x8_gpio_call( u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->write_pulse_width_ns );
-				u8x8_gpio_call( u8x8, U8X8_MSG_GPIO_E, 1 );
+				asm("NOP");
+				WR_LOW;
+				asm("NOP");
+				WR_HIGH;
 				data++;
 				arg_int--;
 			}
 			break;
 
 		case U8X8_MSG_BYTE_INIT:
-			u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_disable_level );
-			u8x8_gpio_call( u8x8, U8X8_MSG_GPIO_E, 1 );
+			CS_HIGH;
+			WR_HIGH;
 			break;
 
 		case U8X8_MSG_BYTE_SET_DC:
@@ -91,13 +107,13 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 			break;
 
 		case U8X8_MSG_BYTE_START_TRANSFER:
-			u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_enable_level );
+			CS_LOW;
 			u8x8->gpio_and_delay_cb( u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->post_chip_enable_wait_ns, NULL);
 			break;
 
 		case U8X8_MSG_BYTE_END_TRANSFER:
 			u8x8->gpio_and_delay_cb( u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->pre_chip_disable_wait_ns, NULL );
-			u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_disable_level );
+			CS_HIGH;
 			break;
 
 		default:
@@ -139,7 +155,9 @@ uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 			break;
 
 		case U8X8_MSG_DELAY_10MICRO:		// delay arg_int * 10 micro seconds
-			vTaskDelay( 1 / portTICK_PERIOD_MS );
+			for(i = 0; i < 200; i++ ) {
+				asm("NOP");
+			}
 			break;
 
 		case U8X8_MSG_DELAY_MILLI:			// delay arg_int * 1 milli second

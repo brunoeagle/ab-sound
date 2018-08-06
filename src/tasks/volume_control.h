@@ -7,5 +7,6 @@
 
 void volumeControl_Task( void *pvParameters );
 void volumeControl_Setup( void );
+uint8_t volumeControl_GetCurrentVolume( uint8_t trimpot );
 
 #endif
