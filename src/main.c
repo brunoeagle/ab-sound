@@ -16,6 +16,7 @@
 #include "tasks/wifi.h"
 #include "stm32/spi1.h"
 #include "stm32/usart2.h"
+#include "stm32/clock.h"
 
 static void hw_Setup( void );
 
@@ -35,50 +36,16 @@ int main( void ) {
 }
 
 static void hw_Setup( void ) {
-	RCC_ClkInitTypeDef RCC_ClkInitStruct;
-	RCC_OscInitTypeDef RCC_OscInitStruct;
-
 	SCB_EnableICache();
 	SCB_EnableDCache();
-	HAL_NVIC_SetPriorityGrouping( NVIC_PRIORITYGROUP_4 );
-	__HAL_RCC_PWR_CLK_ENABLE();
 	HAL_Init();
-
-	/* Enable HSE Oscillator and activate PLL with HSE as source */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLM = 25;
-	RCC_OscInitStruct.PLL.PLLN = 432;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = 9;
-
-	if( HAL_RCC_OscConfig( &RCC_OscInitStruct ) != HAL_OK )
-		while( 1 );
-
-	/* Activate the OverDrive to reach the 216 MHz Frequency */
-	if( HAL_PWREx_EnableOverDrive() != HAL_OK )
-		while( 1 );
-
-	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers */
-	RCC_ClkInitStruct.ClockType = ( RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2) ;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;		// Core will be at 216MHz
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;		// APB1 Peripherals at 54MHz
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;		// APB2 Peripherals at 108MHz
-
-	if( HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK )
-		while( 1 );
-
+	clock_InitMainClock();
 	SystemCoreClockUpdate();
-	HAL_DeInit();
 	digitalTrimpots_Setup();
 	volumeControl_Setup();
 	inputSelector_Setup();
 	display_Setup();
 	dac_Setup();
-
 	spi1_Setup();
 	usart2_Setup();
 }

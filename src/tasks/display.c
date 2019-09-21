@@ -27,20 +27,6 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 
 void display_Setup( void ) {
-	// Setup the timer
-	/*__HAL_RCC_TIM7_CLK_ENABLE();
-	HAL_NVIC_SetPriority( TIM7_IRQn, 0, 0 );
-	HAL_NVIC_EnableIRQ( TIM7_IRQn );
-
-	TIM_HandleStruct.Instance = TIM7;
-	TIM_HandleStruct.Init.ClockDivision = 0;
-	TIM_HandleStruct.Init.Prescaler = 216;		// 108MHz of input clock
-	TIM_HandleStruct.Init.Period = 1000;		// Interrupt each 1ms
-	TIM_HandleStruct.Init.CounterMode = TIM_COUNTERMODE_UP;
-	if( HAL_TIM_Base_Init( &TIM_HandleStruct ) != HAL_OK )
-		while( 1 );
-	HAL_TIM_Base_Start_IT( &TIM_HandleStruct );*/
-
 	displayMutex = xSemaphoreCreateMutex();
 	while( displayMutex == NULL );
 }
@@ -61,6 +47,7 @@ void display_Task( void *pvParameters ) {
 		u8g2_SetFont( &display, u8g2_font_roentgen_nbp_tf );
 		xSemaphoreGive( displayMutex );
 	}
+	gainMaster = 0;
 	for( ;; ) {
 		gainMaster = volumeControl_GetCurrentVolume( LEFT_TRIMPOT );
 		itoa( gainMaster, &gainStr[ 8 ], 10 );
@@ -76,7 +63,7 @@ void display_Task( void *pvParameters ) {
 			u8g2_SendBuffer( &display );
 			xSemaphoreGive( displayMutex );
 		}
-		vTaskDelay( ( 1 / portTICK_PERIOD_MS ) );
+		vTaskDelay( ( 20 / portTICK_PERIOD_MS ) );
 	}
 }
 

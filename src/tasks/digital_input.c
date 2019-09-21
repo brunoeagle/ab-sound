@@ -2,7 +2,8 @@
 #include "digital_input.h"
 #include "peripherals/spdif.h"
 #include "peripherals/dac.h"
-#include "lcd.h"
+#include "spdif.h"
+#include "sai1.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -11,26 +12,36 @@
 
 static void digitalInput_ConfigureInput( uint8_t input );
 
-uint32_t received_data_flow[ 64 ] ;
 uint8_t digitalChannelSelected;
+extern SPDIFRX_HandleTypeDef SPDIFRX_HandleStruct;
+extern uint32_t rxBuffer[ 15360 ];
+extern SAI_HandleTypeDef SAI_HandleStruct;
 
 void digitalInput_Setup( void ) {
 	digitalChannelSelected = 0;
 }
 
 void digitalInput_Task( void *pvParameters ) {
+	spdif_Setup( 1 );
+	sai1_Setup();
 	for( ;; ) {
-		if( !digitalChannelSelected ) {
+		/*if( !digitalChannelSelected ) {
 			portYIELD();
 		}
 		else {
 			digitalInput_ConfigureInput( digitalChannelSelected );
-		}
-
-		/*HAL_SPDIFRX_ReceiveDataFlow( &SPDIFRX_HandleStruct, ( uint32_t * )received_data_flow, 64, 0xFFF );
-		if( SPDIFRX_HandleStruct.ErrorCode != HAL_SPDIFRX_ERROR_NONE ) {
-			while( 1 );
 		}*/
+
+
+		if(	HAL_SPDIFRX_ReceiveDataFlow_IT( &SPDIFRX_HandleStruct, rxBuffer, 15360 ) == HAL_OK ) {
+			while ( SPDIFRX_HandleStruct.RxXferCount > 15360 / 2) ;
+			HAL_GPIO_TogglePin( GPIOC, GPIO_PIN_5 );
+		}
+		if( HAL_SAI_Transmit( &SAI_HandleStruct, (uint8_t*)rxBuffer, 5000, 1000 ) != HAL_OK ) {
+			digitalChannelSelected = 1;
+		}
+		digitalChannelSelected = 2;
+
 	}
 }
 

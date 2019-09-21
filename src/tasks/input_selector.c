@@ -74,8 +74,8 @@ void inputSelector_Setup( void ) {
 	DISABLE_L_NO_FILTER;
 	DISABLE_R_FILTER;
 	DISABLE_R_NO_FILTER;
-	ENABLE_L_NO_FILTER;
-	ENABLE_R_NO_FILTER;
+	ENABLE_L_FILTER;
+	ENABLE_R_FILTER;
 	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 |
 			GPIO_PIN_15;
 	HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
@@ -85,6 +85,7 @@ void inputSelector_Setup( void ) {
 	// mute/stand-by init
 	MUTE_ON;
 	STANDBY_ON;
+	ENABLE_IN4;
 	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_4;
 	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
 
