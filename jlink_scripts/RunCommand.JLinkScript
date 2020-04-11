@@ -1,0 +1,5 @@
+device STM32F746BG
+if SWD
+speed auto
+g
+exit

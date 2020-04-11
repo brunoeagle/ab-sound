@@ -3,6 +3,8 @@
 .dep/
 .project
 .settings/
+*state.json
+settings.json
 
 #files being edited
 *~

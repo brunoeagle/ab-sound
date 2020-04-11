@@ -1,0 +1,49 @@
+{
+    "env": {        
+        "projectDirectory": "${workspaceFolder}"
+    },
+    "configurations": [
+        {
+            "name": "All",
+            "includePath": [
+                "${config:gccDirectory}/lib/gcc/arm-none-eabi/9.2.1/include",
+                "${config:gccDirectory}/lib/gcc/arm-none-eabi/9.2.1/include-fixed",
+                "${config:gccDirectory}/arm-none-eabi/include",
+                "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1",
+                "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1/arm-none-eabi/thumb/v7e-m+fp/hard",
+                "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1/backward",
+                "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/CMSIS/Include",
+                "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/CMSIS/Device/ST/STM32F7xx/Include",
+                "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/STM32F7xx_HAL_Driver/Inc",
+                "${config:FreeRTOSv10.3.1_Directory}/FreeRTOS/Source/include",
+                "${config:FreeRTOSv10.3.1_Directory}/FreeRTOS/Source/portable/GCC/ARM_CM3",
+                "${workspaceFolder}/src/**"
+            ],
+            "browse": {
+                "path": [
+                    "${config:gccDirectory}/lib/gcc/arm-none-eabi/9.2.1/include",
+                    "${config:gccDirectory}/lib/gcc/arm-none-eabi/9.2.1/include-fixed",
+                    "${config:gccDirectory}/arm-none-eabi/include",
+                    "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1",
+                    "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1/arm-none-eabi/thumb/v7e-m+fp/hard",
+                    "${config:gccDirectory}/arm-none-eabi/include/c++/9.2.1/backward",
+                    "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/CMSIS/Include",
+                    "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/CMSIS/Device/ST/STM32F7xx/Include",
+                    "${config:STM32Cube_FW_F7_V1.16.0_sdkDirectory}/Drivers/STM32F7xx_HAL_Driver/Inc",
+                    "${config:FreeRTOSv10.3.1_Directory}/FreeRTOS/Source/include",
+                    "${config:FreeRTOSv10.3.1_Directory}/FreeRTOS/Source/portable/GCC/ARM_CM3",
+                    "${workspaceFolder}/src/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "defines": [
+                "STM32F746xx"
+            ],
+            "intelliSenseMode": "${default}",
+            "compilerPath": "${config:gccDirectory}/bin/arm-none-eabi-gcc",
+            "cStandard": "c99",
+            "cppStandard": "c++11"
+        }
+    ],
+    "version": 4
+}

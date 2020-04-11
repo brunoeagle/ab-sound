@@ -1,0 +1,64 @@
+{
+  "skipTerminateQuickPick": false,
+  "skipSwitchToOutput": false,
+  "skipErrorMessage": false,
+  "commands": [
+    {
+      "text": "Build",
+      "tooltip": "F7",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Build All",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 5
+    },
+    {
+      "text": "Clean",
+      "tooltip": "F8",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Clean All",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 4
+    },
+    {
+      "text": "Erase MCU",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Erase MCU",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 3
+    },
+    {
+      "text": "Flash MCU",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Flash MCU",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 2
+    },
+    {
+      "text": "Reset MCU",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Reset MCU",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 1
+    }
+    ,
+    {
+      "text": "Run MCU",
+      "color": "yellow",
+      "commandType": "palette",
+      "command": "workbench.action.tasks.runTask|Run MCU",
+      "alignment": "left",
+      "skipTerminateQuickPick": false,
+      "priority": 0
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+device STM32F746BG
+if SWD
+speed auto
+loadfile ab-sound.bin, 0x0000A000
+r
+r0
+exit

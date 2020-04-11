@@ -1,0 +1,101 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build All",
+            "type": "shell",
+            "command": "make -j4",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Clean All",
+            "type": "shell",
+            "command": "make clean",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Erase MCU",
+            "type": "shell",
+            "command": "${config:jlinkExecutable}",
+            "args": [
+                    "-CommanderScript",
+                    "${workspaceFolder}/jlink_scripts/EraseCommand.JLinkScript"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Flash MCU",
+            "type": "shell",
+            "command": "${config:jlinkExecutable}",
+            "args": [
+                    "-CommanderScript",
+                    "${workspaceFolder}/jlink_scripts/FlashCommand.JLinkScript"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Reset MCU",
+            "type": "shell",
+            "command": "${config:jlinkExecutable}",
+            "args": [
+                    "-CommanderScript",
+                    "${workspaceFolder}/jlink_scripts/ResetCommand.JLinkScript"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Run MCU",
+            "type": "shell",
+            "command": "${config:jlinkExecutable}",
+            "args": [
+                    "-CommanderScript",
+                    "${workspaceFolder}/jlink_scripts/RunCommand.JLinkScript"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        }
+    ]
+}
