@@ -5,6 +5,8 @@ UART_HandleTypeDef UART_HandleStruct;
 RCC_PeriphCLKInitTypeDef RCC_InitStruct;
 usartRxCallbackFunction usart2_ReceiveCallback;
 
+SemaphoreHandle_t usart2Mutex;
+
 void usart2_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 

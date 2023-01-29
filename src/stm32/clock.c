@@ -13,21 +13,21 @@ void clock_InitMainClock( void ) {
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
 	RCC_OscInitStruct.PLL.PLLM = 25;
-	RCC_OscInitStruct.PLL.PLLN = 432;
+	RCC_OscInitStruct.PLL.PLLN = 160;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = 9;
+	RCC_OscInitStruct.PLL.PLLQ = 2;
 	if( HAL_RCC_OscConfig( &RCC_OscInitStruct ) != HAL_OK )
 		while( 1 );
 	// Overdrive activation to achieve 216MHz
 	if( HAL_PWREx_EnableOverDrive() != HAL_OK )
 		while( 1 );
 
-	// PLL as system clock source. HCLK 216MHz, APB1 54MHz, APB2 108MHz
+	// PLL as system clock source. HCLK 80MHz, APB1 40MHz, APB2 80MHz
 	RCC_ClkInitStruct.ClockType = ( RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2) ;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;		// Core will be at 216MHz
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;		// APB1 Peripherals at 54MHz
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;		// APB2 Peripherals at 108MHz
-	if( HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK )
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;		// Core will be at 80MHz
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;		// APB1 Peripherals at 40MHz
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;		// APB2 Peripherals at 80MHz
+	if( HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK )
 		while( 1 );
 }

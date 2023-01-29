@@ -1,6 +1,7 @@
 #include "stm32f7xx.h"
 #include "stdlib.h"
 #include "display.h"
+#include "string.h"
 #include "digital_trimpots.h"
 #include "input_selector.h"
 #include "volume_control.h"
@@ -22,9 +23,12 @@
 #define CS_HIGH			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_13, GPIO_PIN_SET )		// CS high
 #define CS_LOW			HAL_GPIO_WritePin( GPIOG, GPIO_PIN_13, GPIO_PIN_RESET )		// CS low
 
+SemaphoreHandle_t displayMutex;
+
 u8g2_t display;
 uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
+const char STR_INPUTS[] = { "   P2      RCA      BT     SPDIF    OPTIC  " };
 
 void display_Setup( void ) {
 	displayMutex = xSemaphoreCreateMutex();
@@ -32,9 +36,9 @@ void display_Setup( void ) {
 }
 
 void display_Task( void *pvParameters ) {
-	uint8_t gainMaster, inputSelected;
-	char inputStr[] = { "Input: 0" };
-	char gainStr[] = { "Volume: 000" };
+	int8_t volumeHigh, volumeLow, inputSelected, inputArrowOffset = -1;
+	char volumeHighStr[] = { "HIGH: 000" };
+	char volumeLowStr[] = { "LOW: 000" };
 
 	if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
 		u8g2_Setup_ssd1322_nhd_256x64_f( &display, U8G2_R0, cb1, cb2);
@@ -44,26 +48,34 @@ void display_Task( void *pvParameters ) {
 		u8g2_SetFlipMode( &display, 1 );
 		u8g2_SetPowerSave( &display, 0 ); // wake up display
 		u8g2_SetFontMode( &display, 1 );
-		u8g2_SetFont( &display, u8g2_font_roentgen_nbp_tf );
+		u8g2_SetDrawColor( &display, 1 );
+		u8g2_SetFont( &display, u8g2_font_mozart_nbp_t_all );
 		xSemaphoreGive( displayMutex );
 	}
-	gainMaster = 0;
 	for( ;; ) {
-		gainMaster = volumeControl_GetCurrentVolume( LEFT_TRIMPOT );
-		itoa( gainMaster, &gainStr[ 8 ], 10 );
-		inputSelected = inputSelector_GetCurrentInput() | 0x30;
-		inputStr[ 7 ] = inputSelected;
+		if( ( volumeHigh == volumeControl_GetCurrentVolume( LEFT_TRIMPOT ) )  &&
+		    ( volumeLow == volumeControl_GetCurrentVolume( SUBWOOFER_TRIMPOT ) ) &&
+			( inputSelected == inputSelector_GetCurrentInput() ) ) {
+				taskYIELD();
+				continue;
+		}
+		volumeHigh = volumeControl_GetCurrentVolume( LEFT_TRIMPOT );
+		volumeLow = volumeControl_GetCurrentVolume( SUBWOOFER_TRIMPOT );
+		inputSelected = inputSelector_GetCurrentInput();
+		itoa( volumeHigh, &volumeHighStr[ 6 ], 10 );
+		itoa( volumeLow, &volumeLowStr[ 5 ], 10 );
+		if( inputSelected )
+			inputArrowOffset = 20 + ( 51 * ( inputSelected - 1 ) );
 		if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
 			u8g2_ClearBuffer( &display );
-			u8g2_SetDrawColor( &display, 1 );
-			u8g2_DrawStr( &display, 0, 15, inputStr );
-			u8g2_DrawBox( &display, 0, 40, gainMaster, 10 );
-			u8g2_SetDrawColor( &display, 2 );
-			u8g2_DrawStr( &display, 5, 49, gainStr );
+			u8g2_DrawStr( &display, 110, 20, volumeHighStr );
+			u8g2_DrawStr( &display, 116, 28, volumeLowStr );
+			u8g2_DrawStr( &display, 0, 57, STR_INPUTS );
+			if( inputSelected )
+				u8g2_DrawTriangle( &display, inputArrowOffset, 63, inputArrowOffset + 6, 63, inputArrowOffset + 3, 58 );
 			u8g2_SendBuffer( &display );
 			xSemaphoreGive( displayMutex );
 		}
-		vTaskDelay( ( 20 / portTICK_PERIOD_MS ) );
 	}
 }
 
@@ -75,9 +87,9 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 			data = (uint8_t *)arg_ptr;
 			while( arg_int > 0 ) {
 				GPIOK->ODR = *data;
-				asm("NOP");
+				//asm("NOP");
 				WR_LOW;
-				asm("NOP");
+				//asm("NOP");
 				WR_HIGH;
 				data++;
 				arg_int--;
@@ -111,7 +123,7 @@ uint8_t cb1(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 
 uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 	GPIO_InitTypeDef GPIO_InitStruct;
-	uint8_t i;
+	volatile uint8_t i;
 	switch(msg) {
 		case U8X8_MSG_GPIO_AND_DELAY_INIT:	// called once during init phase of u8g2/u8x8
 
@@ -136,13 +148,25 @@ uint8_t cb2(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 			break;
 
 		case U8X8_MSG_DELAY_100NANO:		// delay arg_int * 100 nano seconds
-			for(i = 0; i < 25; i++ ) {
-				asm("NOP");
-			}
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
+			asm("NOP");
 			break;
 
 		case U8X8_MSG_DELAY_10MICRO:		// delay arg_int * 10 micro seconds
-			for(i = 0; i < 200; i++ ) {
+			for(i = 0; i < 100; i++ ) {
+				asm("NOP");
+				asm("NOP");
+				asm("NOP");
+				asm("NOP");
+				asm("NOP");
+				asm("NOP");
+				asm("NOP");
 				asm("NOP");
 			}
 			break;

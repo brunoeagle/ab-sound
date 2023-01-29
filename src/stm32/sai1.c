@@ -1,9 +1,11 @@
 #include "stm32f7xx_hal.h"
 #include "sai1.h"
 
-SAI_HandleTypeDef SAI_HandleStruct;
-RCC_PeriphCLKInitTypeDef RCC_PerInitStruct;
-GPIO_InitTypeDef GPIO_InitStruct;
+static SAI_HandleTypeDef SAI_HandleStruct;
+static RCC_PeriphCLKInitTypeDef RCC_PerInitStruct;
+static GPIO_InitTypeDef GPIO_InitStruct;
+
+SemaphoreHandle_t sai1Mutex;
 
 void sai1_Setup( void ) {
 	__HAL_RCC_SAI1_CLK_ENABLE();
@@ -14,8 +16,8 @@ void sai1_Setup( void ) {
 	RCC_PerInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SAI1;
 	RCC_PerInitStruct.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI;	// SAI1 clock comes from PLLSAI
 	RCC_PerInitStruct.PLLSAI.PLLSAIN = 258;		// Input to PLLSAI block is 1MHZ, output 258MHz
-	RCC_PerInitStruct.PLLSAI.PLLSAIQ = 7;		// 258 ÷ 7 = 36,8571MHz
-	RCC_PerInitStruct.PLLSAIDivQ = 1;			// 36,8571 ÷ 1 = 36,8571MHz to SAI1 and SAI2, 0,186% deviation to 36,8640MHz
+	RCC_PerInitStruct.PLLSAI.PLLSAIQ = 7;		// 258 ï¿½ 7 = 36,8571MHz
+	RCC_PerInitStruct.PLLSAIDivQ = 1;			// 36,8571 ï¿½ 1 = 36,8571MHz to SAI1 and SAI2, 0,186% deviation to 36,8640MHz
 	if( HAL_RCCEx_PeriphCLKConfig( &RCC_PerInitStruct ) != HAL_OK )
 		while( 1 );
 

@@ -28,14 +28,16 @@ void volumeControl_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	__HAL_RCC_GPIOI_CLK_ENABLE();
+	__HAL_RCC_GPIOE_CLK_ENABLE();
 	// Setup the I/O of the volume trimpots
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
 	GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5 |
-			GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_14 |
-			GPIO_PIN_15;
+			GPIO_PIN_6 | GPIO_PIN_7;
 	HAL_GPIO_Init( GPIOI, &GPIO_InitStruct );
+	GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_3;
+	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
 }
 
 void volumeControl_Task( void *pvParameters ) {
@@ -59,7 +61,7 @@ void volumeControl_Task( void *pvParameters ) {
 		while(1);
 
 	for( ;; ) {
-		volumeControl_StateMachine( LOW_ENCODER, &lowStateMachine, GPIO_PIN_14, GPIO_PIN_15, &lastLowActivity, &lowCounter );
+		volumeControl_StateMachine( LOW_ENCODER, &lowStateMachine, GPIO_PIN_2, GPIO_PIN_3, &lastLowActivity, &lowCounter );
 		volumeControl_StateMachine( HIGH_ENCODER, &highStateMachine, GPIO_PIN_6, GPIO_PIN_7, &lastHighActivity, &highCounter );
 		volumeControl_StateMachine( MASTER_ENCODER, &masterStateMachine, GPIO_PIN_4, GPIO_PIN_5, &lastMasterActivity, &masterCounter );
 	}
@@ -68,17 +70,18 @@ void volumeControl_Task( void *pvParameters ) {
 static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *stateMachine,
 		uint16_t pinUp, uint16_t pinDown, volatile TickType_t *lastActivity,
 		volatile uint8_t *counter ) {
+	GPIO_TypeDef *gpio[] = { GPIOE, GPIOI, GPIOI };
 	switch( *stateMachine ) {
 		case 0:
-			if( !HAL_GPIO_ReadPin( GPIOI, pinUp ) )
+			if( !HAL_GPIO_ReadPin( gpio[ channel ], pinUp ) )
 				*stateMachine = 1;
-			else if( !HAL_GPIO_ReadPin( GPIOI, pinDown ) )
+			else if( !HAL_GPIO_ReadPin( gpio[ channel ], pinDown ) )
 				*stateMachine = 2;
 			*lastActivity = xTaskGetTickCount();
 			*counter = 0;
 			break;
 		case 1:		// increase	volume
-			if( !HAL_GPIO_ReadPin( GPIOI, pinUp ) && !HAL_GPIO_ReadPin( GPIOI, pinDown ) )
+			if( !HAL_GPIO_ReadPin( gpio[ channel ], pinUp ) && !HAL_GPIO_ReadPin( gpio[ channel ], pinDown ) )
 				(*counter)++;
 			if( *counter >= 20 ) {
 				// increase volume on channel
@@ -90,7 +93,7 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 				*stateMachine = 0;
 			break;
 		case 2:		// decrease volume
-			if( !HAL_GPIO_ReadPin( GPIOI, pinUp ) && !HAL_GPIO_ReadPin( GPIOI, pinDown ) )
+			if( !HAL_GPIO_ReadPin( gpio[ channel ], pinUp ) && !HAL_GPIO_ReadPin( gpio[ channel ], pinDown ) )
 				(*counter)++;
 			if( *counter >= 20 ) {
 				// decrease volume on channel
@@ -102,7 +105,7 @@ static void volumeControl_StateMachine( uint8_t channel, volatile uint8_t *state
 				*stateMachine = 0;
 			break;
 		case 3:
-			if( HAL_GPIO_ReadPin( GPIOI, pinUp ) && HAL_GPIO_ReadPin( GPIOI, pinDown ) )
+			if( HAL_GPIO_ReadPin( gpio[ channel ], pinUp ) && HAL_GPIO_ReadPin( gpio[ channel ], pinDown ) )
 				(*counter)++;
 			if( *counter >= 30 )
 				*stateMachine = 0;

@@ -85,7 +85,6 @@ void inputSelector_Setup( void ) {
 	// mute/stand-by init
 	MUTE_ON;
 	STANDBY_ON;
-	ENABLE_IN4;
 	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_4;
 	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
 
@@ -109,20 +108,20 @@ void inputSelector_Task( void *pvParameters ) {
 		if( SELECTOR_BT && inputSelected != 3) {
 			inputSelected = 3;
 			inputSelector_DisableAll();
-			ENABLE_IN3;
+			ENABLE_IN4;
 			inputSelector_Mute( 1 );
 		}
 		if( SELECTOR_SPDIF && inputSelected != 4 ) {
 			inputSelected = 4;
 			inputSelector_DisableAll();
-			ENABLE_IN4;
+			ENABLE_IN3;
 			inputSelector_Mute( 0 );
 			// wake-up the spdif task here
 		}
 		if( SELECTOR_OPTIC && inputSelected != 5 ) {
 			inputSelected = 5;
 			inputSelector_DisableAll();
-			ENABLE_IN4;
+			ENABLE_IN3;
 			inputSelector_Mute( 0 );
 			// wake-up the spdif task here
 		}

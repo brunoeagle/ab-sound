@@ -4,6 +4,8 @@
 SPI_HandleTypeDef SPI_HandleStruct;
 uint8_t lastReceivedByte;
 
+SemaphoreHandle_t spi1Mutex;
+
 void spi1_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -20,7 +22,7 @@ void spi1_Setup( void ) {
 
 	SPI_HandleStruct.Instance = SPI1;
 	SPI_HandleStruct.Init.Mode = SPI_MODE_MASTER;
-	SPI_HandleStruct.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;	// APB2 prescaler = 2, fPCLK = 108MHz, SPI cock 108MHz/16 = 6,75MHz
+	SPI_HandleStruct.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;	// APB2 prescaler = 1, fPCLK = 80MHz, SPI cock 80MHz/8 = 10MHz
 	SPI_HandleStruct.Init.Direction = SPI_DIRECTION_2LINES;
 	SPI_HandleStruct.Init.CLKPhase = SPI_PHASE_1EDGE;
 	SPI_HandleStruct.Init.CLKPolarity = SPI_POLARITY_LOW;

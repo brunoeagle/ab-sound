@@ -4,8 +4,6 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-SemaphoreHandle_t sai1Mutex;
-
 void sai1_Setup( void );
 
 #endif

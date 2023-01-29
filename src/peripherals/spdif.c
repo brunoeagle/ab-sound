@@ -1,13 +1,13 @@
 #include "stm32f7xx_hal.h"
 #include "spdif.h"
 
-RCC_PeriphCLKInitTypeDef RCC_PerInitStruct;
-GPIO_InitTypeDef GPIO_InitStruct;
-SAI_InitTypeDef SAI_InitStruct;
-DMA_InitTypeDef DMA_InitStruct;
-SPDIFRX_InitTypeDef SPDIFRX_InitStruct;
-SPDIFRX_HandleTypeDef SPDIFRX_HandleStruct;
-uint32_t rxBuffer[ 1000 ];
+static RCC_PeriphCLKInitTypeDef RCC_PerInitStruct;
+static GPIO_InitTypeDef GPIO_InitStruct;
+static SAI_InitTypeDef SAI_InitStruct;
+static DMA_InitTypeDef DMA_InitStruct;
+static SPDIFRX_InitTypeDef SPDIFRX_InitStruct;
+static SPDIFRX_HandleTypeDef SPDIFRX_HandleStruct;
+static uint32_t rxBuffer[ 1000 ];
 
 
 void spdif_Setup( uint8_t input ) {

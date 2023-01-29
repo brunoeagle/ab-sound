@@ -4,8 +4,6 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-SemaphoreHandle_t usart2Mutex;
-
 typedef void ( *usartRxCallbackFunction )( uint8_t b );
 
 void usart2_Setup( void );
