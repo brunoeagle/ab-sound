@@ -5,15 +5,15 @@
 #include "queue.h"
 #include "task.h"
 
-#define INPUT_NONE  0
-#define INPUT_P2    1
-#define INPUT_RCA   2
-#define INPUT_BT    3
-#define INPUT_SPDIF 4
-#define INPUT_OPTIC 5
+#define INPUT_NONE  -1
+#define INPUT_P2    0
+#define INPUT_RCA   1
+#define INPUT_BT    2
+#define INPUT_SPDIF 3
+#define INPUT_OPTIC 4
 
 void inputSelector_Task( void *pvParameters );
 void inputSelector_Setup( void );
-uint8_t inputSelector_GetCurrentInput( void );
+int8_t inputSelector_GetCurrentInput( void );
 
 #endif

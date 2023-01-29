@@ -40,7 +40,7 @@ static void inputSelectorBTInterrupt( void );
 static void inputSelectorSPDIFInterrupt( void );
 static void inputSelectorOpticInterrupt( void );
 
-static volatile uint8_t inputSelected = INPUT_NONE;
+static volatile int8_t inputSelected = INPUT_NONE;
 static QueueHandle_t selectionQueue;
 
 void inputSelector_Setup( void ) {
@@ -100,7 +100,7 @@ void inputSelector_Setup( void ) {
 	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
 
 	// Selection interrupt queue
-	selectionQueue = xQueueCreate( 10, sizeof( uint8_t ) );
+	selectionQueue = xQueueCreate( 10, sizeof( int8_t ) );
 	while( selectionQueue == NULL );
 }
 
@@ -168,31 +168,31 @@ static void inputSelector_Mute( uint8_t mute ) {
 	}
 }
 
-uint8_t inputSelector_GetCurrentInput( void ) {
+int8_t inputSelector_GetCurrentInput( void ) {
 	return inputSelected;
 }
 
 static void inputSelectorP2Interrupt( void ) {
-    uint8_t evt = INPUT_P2;
+    int8_t evt = INPUT_P2;
     xQueueSendFromISR( selectionQueue, &evt, NULL );
 }
 
 static void inputSelectorRCAInterrupt( void ) {
-    uint8_t evt = INPUT_RCA;
+    int8_t evt = INPUT_RCA;
     xQueueSendFromISR( selectionQueue, &evt, NULL );
 }
 
 static void inputSelectorBTInterrupt( void ) {
-    uint8_t evt = INPUT_BT;
+    int8_t evt = INPUT_BT;
     xQueueSendFromISR( selectionQueue, &evt, NULL );
 }
 
 static void inputSelectorSPDIFInterrupt( void ) {
-    uint8_t evt = INPUT_SPDIF;
+    int8_t evt = INPUT_SPDIF;
     xQueueSendFromISR( selectionQueue, &evt, NULL );
 }
 
 static void inputSelectorOpticInterrupt( void ) {
-    uint8_t evt = INPUT_OPTIC;
+    int8_t evt = INPUT_OPTIC;
     xQueueSendFromISR( selectionQueue, &evt, NULL );
 }

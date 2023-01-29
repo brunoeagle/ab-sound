@@ -37,7 +37,7 @@ void display_Setup( void ) {
 
 void display_Task( void *pvParameters ) {
 	int8_t volumeHigh = -1, volumeLow = -1;
-	uint8_t inputSelected = INPUT_NONE;
+	int8_t inputSelected = INPUT_NONE;
 	uint8_t inputArrowOffset = -1;
 	char volumeHighStr[] = { "HIGH: 000" };
 	char volumeLowStr[] = { "LOW: 000" };
@@ -66,14 +66,14 @@ void display_Task( void *pvParameters ) {
 		inputSelected = inputSelector_GetCurrentInput();
 		itoa( volumeHigh, &volumeHighStr[ 6 ], 10 );
 		itoa( volumeLow, &volumeLowStr[ 5 ], 10 );
-		if( inputSelected )
-			inputArrowOffset = 20 + ( 51 * ( inputSelected - 1 ) );
+		if( inputSelected != INPUT_NONE )
+			inputArrowOffset = 20 + ( 51 * ( inputSelected ) );
 		if( xSemaphoreTake( displayMutex, portMAX_DELAY ) == pdTRUE ) {
 			u8g2_ClearBuffer( &display );
 			u8g2_DrawStr( &display, 110, 20, volumeHighStr );
 			u8g2_DrawStr( &display, 116, 28, volumeLowStr );
 			u8g2_DrawStr( &display, 0, 57, STR_INPUTS );
-			if( inputSelected )
+			if( inputSelected != INPUT_NONE )
 				u8g2_DrawTriangle( &display, inputArrowOffset, 63, inputArrowOffset + 6, 63, inputArrowOffset + 3, 58 );
 			u8g2_SendBuffer( &display );
 			xSemaphoreGive( displayMutex );
