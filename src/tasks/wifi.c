@@ -60,19 +60,19 @@ static void wifi_ReceiveCallback( uint8_t receivedByte ) {
 	static uint8_t responseExpectedSize;
 	static uint8_t preResponseCode;
 	rxBuffer[ rxBufferPos++ ] = receivedByte;
-	lastByteReceivedTime = xTaskGetTickCount();
+	lastByteReceivedTime = xTaskGetTickCountFromISR();
 	if( rxBufferPos >= 1000 )
 		rxBufferPos = 0;
 	switch( responseState ) {
 	case 0:
 		if( receivedByte == 'O' ) {
-			responseExpectedPtr = responses[ 0 ] + 1;
+			responseExpectedPtr = ( char * )responses[ 0 ] + 1;
 			responseExpectedSize = 3;
 			preResponseCode = RESPONSE_OK;
 			responseState = 1;
 		}
 		else if( receivedByte == 'E' ) {
-			responseExpectedPtr = responses[ 1 ] + 1;
+			responseExpectedPtr = ( char * )responses[ 1 ] + 1;
 			responseExpectedSize = 6;
 			preResponseCode = RESPONSE_ERROR;
 			responseState = 1;

@@ -36,7 +36,9 @@ void display_Setup( void ) {
 }
 
 void display_Task( void *pvParameters ) {
-	int8_t volumeHigh, volumeLow, inputSelected, inputArrowOffset = -1;
+	int8_t volumeHigh = -1, volumeLow = -1;
+	uint8_t inputSelected = INPUT_NONE;
+	uint8_t inputArrowOffset = -1;
 	char volumeHighStr[] = { "HIGH: 000" };
 	char volumeLowStr[] = { "LOW: 000" };
 

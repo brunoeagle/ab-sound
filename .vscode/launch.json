@@ -7,7 +7,7 @@
         {
             "name": "Cortex Debug",
             "cwd": "${workspaceFolder}",
-            "executable": "build/exe/ab-sound.out",
+            "executable": "build/ab-sound.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "jlink",

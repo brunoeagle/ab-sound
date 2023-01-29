@@ -154,7 +154,7 @@
 #define  TICK_INT_PRIORITY            ((uint32_t)0x0FU) /*!< tick interrupt priority */
 #define  USE_RTOS                     0U
 #define  PREFETCH_ENABLE              1U
-#define  ART_ACCLERATOR_ENABLE        1U /* To enable instruction cache and prefetch */
+#define  ART_ACCELERATOR_ENABLE       1U /* To enable instruction cache and prefetch */
 
 /* ########################## Assert Selection ############################## */
 /**

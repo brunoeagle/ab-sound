@@ -24,6 +24,8 @@ static void hw_Setup( void );
 int main( void ) {
 	hw_Setup();
 
+	HAL_NVIC_SetPriorityGrouping( NVIC_PRIORITYGROUP_4 );
+
 	//xTaskCreate( wifi_Task, "WiFi Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( display_Task, "Display Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );
 	xTaskCreate( volumeControl_Task, "Volume Task", 1000, NULL, ( tskIDLE_PRIORITY + 1 ), NULL );

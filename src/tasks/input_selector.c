@@ -1,4 +1,5 @@
 #include "stm32f7xx_hal.h"
+#include "exti.h"
 #include "input_selector.h"
 #include "display.h"
 #include "u8g2.h"
@@ -8,19 +9,14 @@
 #include "semphr.h"
 #include "task.h"
 
-#define	DISABLE_IN1		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_0, GPIO_PIN_SET )
-#define	DISABLE_IN2		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_1, GPIO_PIN_SET )
-#define	DISABLE_IN3		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_2, GPIO_PIN_SET )
-#define	DISABLE_IN4		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_3, GPIO_PIN_SET )
-#define	ENABLE_IN1		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_0, GPIO_PIN_RESET )
-#define	ENABLE_IN2		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_1, GPIO_PIN_RESET )
-#define	ENABLE_IN3		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_2, GPIO_PIN_RESET )
-#define	ENABLE_IN4		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_3, GPIO_PIN_RESET )
-#define	SELECTOR_P2		( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_13 ) == GPIO_PIN_RESET )
-#define	SELECTOR_RCA	( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_12 ) == GPIO_PIN_RESET )
-#define	SELECTOR_BT		( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_11 ) == GPIO_PIN_RESET )
-#define	SELECTOR_SPDIF	( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_10 ) == GPIO_PIN_RESET )
-#define	SELECTOR_OPTIC	( HAL_GPIO_ReadPin( GPIOI, GPIO_PIN_9 ) == GPIO_PIN_RESET )
+#define	DISABLE_P2_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_0, GPIO_PIN_SET )
+#define	DISABLE_RCA_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_1, GPIO_PIN_SET )
+#define	DISABLE_DAC_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_2, GPIO_PIN_SET )
+#define	DISABLE_BT_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_3, GPIO_PIN_SET )
+#define	ENABLE_P2_INPUT		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_0, GPIO_PIN_RESET )
+#define	ENABLE_RCA_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_1, GPIO_PIN_RESET )
+#define	ENABLE_DAC_INPUT	HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_2, GPIO_PIN_RESET )
+#define	ENABLE_BT_INPUT		HAL_GPIO_WritePin( GPIOJ, GPIO_PIN_3, GPIO_PIN_RESET )
 
 #define	DISABLE_L_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_15, GPIO_PIN_SET )
 #define	DISABLE_L_NO_FILTER		HAL_GPIO_WritePin( GPIOC, GPIO_PIN_14, GPIO_PIN_SET )
@@ -38,8 +34,14 @@
 
 static void inputSelector_DisableAll( void );
 static void inputSelector_Mute( uint8_t mute );
+static void inputSelectorP2Interrupt( void );
+static void inputSelectorRCAInterrupt( void );
+static void inputSelectorBTInterrupt( void );
+static void inputSelectorSPDIFInterrupt( void );
+static void inputSelectorOpticInterrupt( void );
 
-volatile uint8_t inputSelected = 0;
+static volatile uint8_t inputSelected = INPUT_NONE;
+static QueueHandle_t selectionQueue;
 
 void inputSelector_Setup( void ) {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -49,27 +51,36 @@ void inputSelector_Setup( void ) {
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOE_CLK_ENABLE();
 
-	// buttons init
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
-	GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10 |
-			GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13;
-	HAL_GPIO_Init( GPIOI, &GPIO_InitStruct );
+	// Input selector buttons init
+	// Optic button
+	exti_InitInput( 9, GPIOI, GPIO_MODE_IT_FALLING, GPIO_PULLUP );
+	exti_AddCallback( 9, &inputSelectorOpticInterrupt );
+	// SPDIF button
+	exti_InitInput( 10, GPIOI, GPIO_MODE_IT_FALLING, GPIO_PULLUP );
+	exti_AddCallback( 10, &inputSelectorSPDIFInterrupt );
+	// BT button
+	exti_InitInput( 11, GPIOI, GPIO_MODE_IT_FALLING, GPIO_PULLUP );
+	exti_AddCallback( 11, &inputSelectorBTInterrupt );
+	// RCA button
+	exti_InitInput( 12, GPIOI, GPIO_MODE_IT_FALLING, GPIO_PULLUP );
+	exti_AddCallback( 12, &inputSelectorRCAInterrupt );
+	// P2
+	exti_InitInput( 13, GPIOI, GPIO_MODE_IT_FALLING, GPIO_PULLUP );
+	exti_AddCallback( 13, &inputSelectorP2Interrupt );
 
-	// input selection init
-	DISABLE_IN1;
-	DISABLE_IN2;
-	DISABLE_IN3;
-	DISABLE_IN4;
+	// Input selector init
+	DISABLE_P2_INPUT;
+	DISABLE_RCA_INPUT;
+	DISABLE_DAC_INPUT;
+	DISABLE_BT_INPUT;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
+	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
 	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 |
 			GPIO_PIN_2 | GPIO_PIN_3;
 	HAL_GPIO_Init( GPIOJ, &GPIO_InitStruct );
 
-	// filter/no filter selection
+	// Filter/no filter init
 	DISABLE_L_FILTER;
 	DISABLE_L_NO_FILTER;
 	DISABLE_R_FILTER;
@@ -82,57 +93,68 @@ void inputSelector_Setup( void ) {
 	GPIO_InitStruct.Pin = GPIO_PIN_8;
 	HAL_GPIO_Init( GPIOI, &GPIO_InitStruct );
 
-	// mute/stand-by init
+	// Mute/stand-by init
 	MUTE_ON;
 	STANDBY_ON;
 	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_4;
 	HAL_GPIO_Init( GPIOE, &GPIO_InitStruct );
 
+	// Selection interrupt queue
+	selectionQueue = xQueueCreate( 10, sizeof( uint8_t ) );
+	while( selectionQueue == NULL );
 }
 
 void inputSelector_Task( void *pvParameters ) {
-	vTaskDelay( 50 / portTICK_PERIOD_MS );
+	uint8_t selectionReceived;
+
 	for( ;; ) {
-		if( SELECTOR_P2 && inputSelected != 1 ) {
-			inputSelected = 1;
-			inputSelector_DisableAll();
-			ENABLE_IN1;
-			inputSelector_Mute( 0 );
-		}
-		if( SELECTOR_RCA && inputSelected != 2 ) {
-			inputSelected = 2;
-			inputSelector_DisableAll();
-			ENABLE_IN2;
-			inputSelector_Mute( 1 );
-		}
-		if( SELECTOR_BT && inputSelected != 3) {
-			inputSelected = 3;
-			inputSelector_DisableAll();
-			ENABLE_IN4;
-			inputSelector_Mute( 1 );
-		}
-		if( SELECTOR_SPDIF && inputSelected != 4 ) {
-			inputSelected = 4;
-			inputSelector_DisableAll();
-			ENABLE_IN3;
-			inputSelector_Mute( 0 );
-			// wake-up the spdif task here
-		}
-		if( SELECTOR_OPTIC && inputSelected != 5 ) {
-			inputSelected = 5;
-			inputSelector_DisableAll();
-			ENABLE_IN3;
-			inputSelector_Mute( 0 );
-			// wake-up the spdif task here
+        if( xQueueReceive( selectionQueue, &selectionReceived, portMAX_DELAY ) != pdPASS )
+            continue;
+		if( inputSelected == selectionReceived )
+			continue;
+		inputSelected = selectionReceived;
+		switch( inputSelected ) {
+			case INPUT_P2:
+				inputSelector_DisableAll();
+				ENABLE_P2_INPUT;
+				inputSelector_Mute( 0 );
+			break;
+			case INPUT_RCA:
+				inputSelector_DisableAll();
+				ENABLE_RCA_INPUT;
+				inputSelector_Mute( 0 );
+			break;
+			case INPUT_BT:
+				inputSelector_DisableAll();
+				ENABLE_BT_INPUT;
+				inputSelector_Mute( 0 );
+			break;
+			case INPUT_SPDIF:
+				inputSelector_DisableAll();
+				ENABLE_DAC_INPUT;
+				inputSelector_Mute( 0 );
+				// init spdif task
+			break;
+			case INPUT_OPTIC:
+				inputSelector_DisableAll();
+				ENABLE_DAC_INPUT;
+				inputSelector_Mute( 0 );
+				// init optic task
+			break;
+			default:
+				inputSelected = INPUT_NONE;
+				inputSelector_DisableAll();
+				inputSelector_Mute( 1 );
+			break;
 		}
 	}
 }
 
 static void inputSelector_DisableAll( void ) {
-	DISABLE_IN1;
-	DISABLE_IN2;
-	DISABLE_IN3;
-	DISABLE_IN4;
+	DISABLE_P2_INPUT;
+	DISABLE_RCA_INPUT;
+	DISABLE_DAC_INPUT;
+	DISABLE_BT_INPUT;
 }
 
 static void inputSelector_Mute( uint8_t mute ) {
@@ -148,4 +170,29 @@ static void inputSelector_Mute( uint8_t mute ) {
 
 uint8_t inputSelector_GetCurrentInput( void ) {
 	return inputSelected;
+}
+
+static void inputSelectorP2Interrupt( void ) {
+    uint8_t evt = INPUT_P2;
+    xQueueSendFromISR( selectionQueue, &evt, NULL );
+}
+
+static void inputSelectorRCAInterrupt( void ) {
+    uint8_t evt = INPUT_RCA;
+    xQueueSendFromISR( selectionQueue, &evt, NULL );
+}
+
+static void inputSelectorBTInterrupt( void ) {
+    uint8_t evt = INPUT_BT;
+    xQueueSendFromISR( selectionQueue, &evt, NULL );
+}
+
+static void inputSelectorSPDIFInterrupt( void ) {
+    uint8_t evt = INPUT_SPDIF;
+    xQueueSendFromISR( selectionQueue, &evt, NULL );
+}
+
+static void inputSelectorOpticInterrupt( void ) {
+    uint8_t evt = INPUT_OPTIC;
+    xQueueSendFromISR( selectionQueue, &evt, NULL );
 }
