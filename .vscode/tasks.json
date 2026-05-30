@@ -34,8 +34,8 @@
             "type": "shell",
             "command": "${config:jlinkExecutable}",
             "args": [
-                    "-CommanderScript",
-                    "${workspaceFolder}/jlink_scripts/EraseCommand.JLinkScript"
+                "-CommanderScript",
+                "${workspaceFolder}/jlink_scripts/EraseCommand.JLinkScript"
             ],
             "presentation": {
                 "echo": true,
@@ -51,8 +51,8 @@
             "type": "shell",
             "command": "${config:jlinkExecutable}",
             "args": [
-                    "-CommanderScript",
-                    "${workspaceFolder}/jlink_scripts/FlashCommand.JLinkScript"
+                "-CommanderScript",
+                "${workspaceFolder}/jlink_scripts/FlashCommand.JLinkScript"
             ],
             "presentation": {
                 "echo": true,
@@ -68,8 +68,8 @@
             "type": "shell",
             "command": "${config:jlinkExecutable}",
             "args": [
-                    "-CommanderScript",
-                    "${workspaceFolder}/jlink_scripts/ResetCommand.JLinkScript"
+                "-CommanderScript",
+                "${workspaceFolder}/jlink_scripts/ResetCommand.JLinkScript"
             ],
             "presentation": {
                 "echo": true,
@@ -85,8 +85,8 @@
             "type": "shell",
             "command": "${config:jlinkExecutable}",
             "args": [
-                    "-CommanderScript",
-                    "${workspaceFolder}/jlink_scripts/RunCommand.JLinkScript"
+                "-CommanderScript",
+                "${workspaceFolder}/jlink_scripts/RunCommand.JLinkScript"
             ],
             "presentation": {
                 "echo": true,

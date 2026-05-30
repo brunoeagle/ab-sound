@@ -15,8 +15,8 @@ OPT = -Og
 # paths
 #######################################
 BUILD_DIR = 	    build
-SDK_ROOT :=       ../STM32Cube_FW_F7_V1.17.0
-FREERTOS_DIR :=   ../FreeRTOSv10.3.1
+SDK_ROOT :=       ../STM32CubeF7
+FREERTOS_DIR :=   ../FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel
 U8G2_DIR :=       ../u8g2
 PROJ_DIR :=       .
 
@@ -50,6 +50,7 @@ C_SOURCES =  \
   $(FREERTOS_DIR)/queue.c \
   $(FREERTOS_DIR)/tasks.c \
   $(FREERTOS_DIR)/timers.c \
+  $(FREERTOS_DIR)/stream_buffer.c \
   $(FREERTOS_DIR)/portable/GCC/ARM_CM7/r0p1/port.c \
   $(FREERTOS_DIR)/portable/MemMang/heap_1.c \
   $(U8G2_DIR)/csrc/u8g2_d_setup.c \
@@ -77,6 +78,7 @@ C_SOURCES =  \
   $(PROJ_DIR)/src/stm32/spi1.c \
   $(PROJ_DIR)/src/stm32/sai1.c \
   $(PROJ_DIR)/src/stm32/usart2.c \
+  $(PROJ_DIR)/src/stm32/usart3.c \
   $(PROJ_DIR)/src/stm32/clock.c \
   $(PROJ_DIR)/src/stm32/tim6_hal_tick.c \
   $(PROJ_DIR)/src/stm32/exti.c \
@@ -85,10 +87,12 @@ C_SOURCES =  \
   $(PROJ_DIR)/src/peripherals/spdif.c \
   $(PROJ_DIR)/src/peripherals/dac.c \
   $(PROJ_DIR)/src/peripherals/esp8266.c \
+  $(PROJ_DIR)/src/peripherals/bm20.c \
   $(PROJ_DIR)/src/tasks/display.c \
   $(PROJ_DIR)/src/tasks/volume_control.c \
   $(PROJ_DIR)/src/tasks/digital_input.c \
   $(PROJ_DIR)/src/tasks/wifi.c \
+  $(PROJ_DIR)/src/tasks/bt.c \
   $(PROJ_DIR)/src/main.c
 
 # ASM sources

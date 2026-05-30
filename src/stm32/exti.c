@@ -8,7 +8,7 @@
 #include "exti.h"
 
 #define EXTI_QTY        16
-#define	CALLBACKS_QTY   3
+#define    CALLBACKS_QTY   3
 
 static extiCallbackFunction *cb[ EXTI_QTY ][ CALLBACKS_QTY ];
 volatile uint32_t interruptsEnabled;

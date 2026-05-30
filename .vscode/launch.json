@@ -12,7 +12,8 @@
             "type": "cortex-debug",
             "servertype": "jlink",
             "device": "STM32F746BG",
-            "interface": "swd"
+            "interface": "swd",
+            "armToolchainPath": "/home/bruno/tools/gcc-arm-none-eabi-10.3-2021.10/bin"
             //"svdFile": "${config:nrf52_sdkDirectory}/modules/nrfx/mdk/nrf52.svd"
         }
     ]
